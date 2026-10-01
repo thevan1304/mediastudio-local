@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediaStudio – Xử lý Ảnh, GIF & Video đa năng trên trình duyệt</title>
+  <meta name="description"
+    content="MediaStudio – Bộ công cụ xử lý Ảnh, GIF & Video trực tuyến: Xóa nền, sửa từng frame, chuyển video sang GIF, xóa âm thanh video. Hoạt động 100% trên trình duyệt." />
+  <meta property="og:title" content="MediaStudio – Xử lý Ảnh, GIF & Video đa năng trên trình duyệt" />
+  <meta property="og:description" content="Công cụ trực tuyến: Xóa nền ảnh & GIF, sửa từng frame, chuyển đổi video sang GIF, tắt tiếng video 100% Client-side." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a855f7'%3E%3Crect x='2' y='3' width='20' height='18' rx='4' fill='%237c3aed'/%3E%3Cpolygon points='10,8 17,12 10,16' fill='white'/%3E%3Ccircle cx='18' cy='6' r='1.5' fill='%23facc15'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- FFmpeg.wasm – local copy to avoid CORS worker issue -->
+  <script src="ffmpeg/ffmpeg.js"></script>
+  <script src="ffmpeg/ffmpeg-util.js"></script>
+</head>
+
+<body>
+  <div class="bg-particles" id="bgParticles"></div>
+
+  <div class="app-wrapper">
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon" title="MediaStudio">
+          <!-- Multimedia Studio Icon: Film Reel + Play + Spark -->
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2.5" y="3.5" width="19" height="17" rx="3.5" stroke="currentColor" stroke-width="2" />
+            <path d="M7 3.5v3M17 3.5v3M7 17.5v3M17 17.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="currentColor" />
+          </svg>
+        </div>
+        <span class="logo-text">Media<span class="accent">Studio</span></span>
+      </div>
+      <div class="badge">🔒 100% Local – Không upload dữ liệu</div>
+    </header>
+
+    <section class="hero">
+      <h1 class="hero-title">Xử lý Ảnh, GIF & Video đa năng trên trình duyệt</h1>
+      <p class="hero-sub">Xóa nền · Sửa từng frame · Video sang GIF · Tắt tiếng video · 100% Local</p>
+    </section>
+
+    <div class="tabs-container" id="tabsContainer" style="display: none;">
+      <button class="tab-btn active" id="tabBgRemove">Xóa nền</button>
+      <button class="tab-btn" id="tabFrameEditor" style="display:none">Sửa từng Frame</button>
+      <button class="tab-btn" id="tabAnimate" style="display:none">Tạo hiệu ứng (Animate)</button>
+      <button class="tab-btn" id="tabImgToGif">Ảnh sang GIF</button>
+      <button class="tab-btn" id="tabVideoToGif">Video sang GIF</button>
+      <button class="tab-btn" id="tabMuteVideo">Xóa âm thanh</button>
+    </div>
+
+    <main class="main-content">
+      <div class="upload-section" id="uploadSection">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="image/*,video/*" hidden />
+          <div class="drop-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2.5" />
+              <path d="M24 28l8-8 8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path d="M32 20v20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M20 44h24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <p class="drop-title">Kéo thả file ảnh, GIF hoặc video vào đây</p>
+          <p class="drop-sub">hoặc</p>
+          <button class="btn-browse" id="browseBtn" onclick="document.getElementById('fileInput').click()">Chọn file
+            Ảnh/GIF/Video</button>
+          <p class="drop-info">Hỗ trợ JPG, PNG, WEBP, GIF, MP4, WebM, MOV · Xử lý ngay trên máy bạn</p>
+        </div>
+      </div>
+
+      <div class="workspace hidden" id="workspace">
+        <div class="preview-row" id="previewRow">
+          <div class="preview-card">
+            <div class="preview-label"><span class="dot dot-blue"></span> Gốc</div>
+            <div class="canvas-wrap checkered" id="originalWrap" style="cursor: crosshair;"
+              title="Click vào vùng nền bị kẹt để xóa">
+              <img id="originalImg" alt="Original GIF" />
+            </div>
+            <div class="preview-meta" id="originalMeta"></div>
+            <p id="manualSeedHint"
+              style="font-size: 11.5px; color: #8892b0; margin-top: 8px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                <path fill-rule="evenodd"
+                  d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                  clip-rule="evenodd" />
+              </svg>
+              Click vào vùng nền lọt thỏm để xóa thủ công
+            </p>
+          </div>
+
+          <div class="arrow-divider">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </div>
+
+          <div class="preview-card">
+            <div class="preview-label"><span class="dot dot-green"></span> Kết quả</div>
+            <div class="canvas-wrap checkered" id="resultWrap">
+              <div class="placeholder-result" id="placeholderResult">
+                <p>Nhấn <strong>Xóa nền</strong> để xem kết quả</p>
+              </div>
+              <img id="resultImg" class="hidden" alt="Result GIF" />
+              <video id="resultVideo" controls playsinline class="hidden"
+                style="width:100%; height:100%; object-fit:contain; border-radius:12px;"></video>
+            </div>
+            <div class="preview-meta" id="resultMeta"></div>
+          </div>
+        </div>
+
+        <div class="controls-panel" id="controlsPanel">
+          <!-- Background Removal Controls -->
+          <div id="bgControls">
+            <div class="controls-grid">
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  Màu nền cần xóa
+                </label>
+                <div class="color-picker-wrap">
+                  <input type="color" id="bgColor" value="#ffffff" />
+                  <span class="color-value" id="colorValue">#ffffff</span>
+                  <button class="btn-eyedrop" id="eyedropBtn" title="Chọn màu từ ảnh">
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                      <path
+                        d="M5.5 2a.5.5 0 01.354.146l7 7a.5.5 0 010 .708l-7 7a.5.5 0 01-.708-.708L11.793 9.5 5.146 2.854A.5.5 0 015.5 2z" />
+                      <path fill-rule="evenodd"
+                        d="M11.854 2.646l5.5 5.5a.5.5 0 010 .708l-5.5 5.5a.5.5 0 01-.708-.708L16.293 8.5l-4.647-4.646a.5.5 0 01.708-.708z"
+                        clip-rule="evenodd" />
+                    </svg>
+                    Hút màu
+                  </button>
+                </div>
+                <p class="hint-text" id="eyedropHint" style="display:none">Nhấp vào ảnh gốc để chọn màu nền</p>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+                  </svg>
+                  Độ nhạy: <span id="toleranceVal">20</span>
+                </label>
+                <input type="range" id="toleranceSlider" min="0" max="128" value="20" class="range-slider" />
+                <div class="range-labels"><span>Chính xác</span><span>Rộng hơn</span></div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  Làm mềm viền: <span id="featherVal">2</span>px
+                </label>
+                <input type="range" id="featherSlider" min="0" max="10" value="2" class="range-slider" />
+                <div class="range-labels"><span>Sắc nét</span><span>Mềm mại</span></div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label"
+                  style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                  <input type="checkbox" id="removeIslands" style="width: 16px; height: 16px;" />
+                  <span style="font-size: 13px; font-weight: 500;">Xóa nền lọt thỏm (lỗ hổng)</span>
+                </label>
+                <p class="hint-text" style="margin-top: 4px;">Cẩn thận: có thể xóa nhầm chi tiết bên trong đối tượng
+                  (mắt, tay, chữ...)</p>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  Tốc độ GIF: <span id="speedVal">1.0</span>x
+                </label>
+                <input type="range" id="speedSlider" min="0.25" max="3" value="1" step="0.25" class="range-slider" />
+                <div class="range-labels"><span>Chậm</span><span>Nhanh</span></div>
+              </div>
+
+              <div class="control-group" id="compressGroup">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0V6.414l-2.293-2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 011.414 1.414L6.414 15H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 011.414-1.414L15 13.586V12a1 1 0 011-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  Nén GIF: <span id="compressVal">Không nén</span>
+                </label>
+                <input type="range" id="compressSlider" min="0" max="4" value="0" step="1" class="range-slider" />
+                <div class="range-labels"><span>Chất lượng cao</span><span>Dung lượng nhỏ</span></div>
+                <p class="hint-text" id="compressHint" style="margin-top: 4px;">100% kích thước · Chất lượng tối đa
+                  (khuyến nghị cho nền trắng/đơn màu)</p>
+              </div>
+            </div>
+
+            <div class="actions" id="mainActions">
+              <button class="btn-secondary" id="resetBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clip-rule="evenodd" />
+                </svg>
+                Chọn file khác
+              </button>
+              <button class="btn-primary" id="processBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span id="processBtnText">Xóa nền Ảnh/GIF</span>
+              </button>
+            </div>
+          </div> <!-- End bgControls -->
+
+          <!-- Animation Controls -->
+          <div id="animateControls" class="hidden">
+            <div class="controls-grid">
+              <div class="control-group">
+                <label class="control-label">Hiệu ứng (Effect)</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="effectType" value="wobble" checked><span>Lắc
+                      lư</span></label>
+                  <label class="effect-radio"><input type="radio" name="effectType" value="pulse"><span>Nhịp
+                      tim</span></label>
+                  <label class="effect-radio"><input type="radio" name="effectType" value="bounce"><span>Nảy
+                      lên</span></label>
+                  <label class="effect-radio"><input type="radio" name="effectType" value="spin"><span>Xoay
+                      tròn</span></label>
+                  <label class="effect-radio"><input type="radio" name="effectType" value="float"><span>Bay
+                      bổng</span></label>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">Biên độ (Intensity): <span id="animIntensityVal">50</span>%</label>
+                <input type="range" id="animIntensitySlider" min="10" max="100" value="50" class="range-slider" />
+                <div class="range-labels"><span>Nhẹ</span><span>Mạnh</span></div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">Tốc độ (Speed): <span id="animSpeedVal">1.0</span>x</label>
+                <input type="range" id="animSpeedSlider" min="0.5" max="3" value="1" step="0.25" class="range-slider" />
+                <div class="range-labels"><span>Chậm</span><span>Nhanh</span></div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn-secondary" id="animResetBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clip-rule="evenodd" />
+                </svg>
+                Chọn file khác
+              </button>
+              <button class="btn-primary" id="animateBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                    clip-rule="evenodd" />
+                </svg>
+                Tạo GIF chuyển động
+              </button>
+            </div>
+          </div> <!-- End animateControls -->
+
+          <!-- Image to GIF Controls -->
+          <div id="imgToGifControls" class="hidden">
+            <!-- Multi-image upload area -->
+            <div class="img2gif-upload-area" id="img2gifUploadArea">
+              <input type="file" id="img2gifFileInput" accept="image/*" multiple hidden />
+              <div class="img2gif-drop-zone" id="img2gifDropZone">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+                  <rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2" />
+                  <path d="M4 34l10-10 7 7 8-10 15 13" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                  <circle cx="15" cy="20" r="3" stroke="currentColor" stroke-width="2" />
+                </svg>
+                <p style="margin:8px 0 4px; font-weight:600; color: #c4b5fd;">Kéo thả nhiều ảnh vào đây</p>
+                <p style="font-size:12px; color:#8892b0; margin:0 0 10px;">Hỗ trợ PNG, JPG, JPEG, WEBP, BMP...</p>
+                <button class="btn-browse" onclick="document.getElementById('img2gifFileInput').click()"
+                  style="font-size:13px; padding:8px 18px;">Chọn ảnh</button>
+              </div>
+              <div class="img2gif-thumb-list" id="img2gifThumbList"></div>
+            </div>
+
+            <div class="controls-grid" style="margin-top: 16px;">
+              <div class="control-group">
+                <label class="control-label">Tốc độ mỗi ảnh: <span id="img2gifDelayVal">500</span> ms</label>
+                <input type="range" id="img2gifDelaySlider" min="50" max="2000" value="500" step="50"
+                  class="range-slider" />
+                <div class="range-labels"><span>Nhanh</span><span>Chậm</span></div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">Kích thước xuất</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="img2gifSize" value="original" checked><span>Giữ
+                      nguyên</span></label>
+                  <label class="effect-radio"><input type="radio" name="img2gifSize" value="0.5"><span>Thu nhỏ
+                      50%</span></label>
+                  <label class="effect-radio"><input type="radio" name="img2gifSize" value="custom"><span>Tuỳ
+                      chỉnh</span></label>
+                </div>
+                <div id="img2gifCustomSizeWrap"
+                  style="display:none; margin-top:8px; display:none; gap:8px; align-items:center;">
+                  <input type="number" id="img2gifCustomW" placeholder="Rộng (px)" class="text-input"
+                    style="width:100px;" />
+                  <span style="color:#8892b0;">×</span>
+                  <input type="number" id="img2gifCustomH" placeholder="Cao (px)" class="text-input"
+                    style="width:100px;" />
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">Chất lượng GIF</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="img2gifQuality" value="10"
+                      checked><span>Cao</span></label>
+                  <label class="effect-radio"><input type="radio" name="img2gifQuality" value="20"><span>Trung
+                      bình</span></label>
+                  <label class="effect-radio"><input type="radio" name="img2gifQuality" value="40"><span>Thấp
+                      (Nhẹ)</span></label>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label"
+                  style="display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;">
+                  <input type="checkbox" id="img2gifLoop" checked style="width:16px; height:16px;" />
+                  <span style="font-size:13px; font-weight:500;">Lặp vô hạn</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn-secondary" id="img2gifClearBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                    clip-rule="evenodd" />
+                </svg>
+                Xóa tất cả
+              </button>
+              <button class="btn-primary" id="img2gifConvertBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                    clip-rule="evenodd" />
+                </svg>
+                Tạo GIF từ ảnh
+              </button>
+            </div>
+          </div> <!-- End imgToGifControls -->
+
+          <!-- Video to GIF Controls -->
+          <div id="videoToGifControls" class="hidden">
+            <p id="videoToGifFileName" class="hint-text" style="margin-bottom:16px;"></p>
+            <div class="controls-grid" style="margin-top:16px;">
+              <div class="control-group">
+                <label class="control-label">Tốc độ khung hình (FPS): <span id="videoToGifFpsVal">10</span></label>
+                <input type="range" id="videoToGifFps" min="1" max="20" value="10" class="range-slider" />
+                <div class="range-labels"><span>Nhẹ (5–8)</span><span>Khuyên dùng (10)</span><span>Mượt (20)</span></div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">Kích thước xuất</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="0.3"><span>Thu nhỏ 30% (~240p · Siêu nhẹ)</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="0.5" checked><span>Thu nhỏ 50% (~380p · Chuẩn)</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="original"><span>Giữ nguyên (Rất nặng)</span></label>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">Đoạn video chuyển đổi (Thời lượng)</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="videoToGifDurationMode" value="all" checked><span>Toàn bộ video</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifDurationMode" value="3"><span>3 giây đầu</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifDurationMode" value="5"><span>5 giây đầu</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifDurationMode" value="custom"><span>Tùy chỉnh giây</span></label>
+                </div>
+                <div id="videoToGifCustomRange" style="display:none; margin-top:10px; align-items:center; gap:8px; font-size:13px; color:var(--text-secondary);">
+                  <span>Từ:</span>
+                  <input type="number" id="videoToGifStartTime" min="0" step="0.5" value="0"
+                    style="width:70px; padding:6px 10px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); text-align:center;">
+                  <span>s  đến:</span>
+                  <input type="number" id="videoToGifEndTime" min="0.5" step="0.5" value="3"
+                    style="width:70px; padding:6px 10px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); text-align:center;">
+                  <span>s</span>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">Chất lượng màu GIF</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="videoToGifQuality" value="10" checked><span>Cao</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifQuality" value="20"><span>Trung bình</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifQuality" value="40"><span>Thấp (Nhanh)</span></label>
+                </div>
+              </div>
+
+              <div class="control-group" style="display:flex; flex-direction:column; justify-content:center;">
+                <label class="control-label" style="display:flex;align-items:center;gap:8px;cursor:pointer; margin-bottom:4px;">
+                  <input type="checkbox" id="videoToGifLoop" checked style="width:16px;height:16px;" />
+                  <span style="font-size:13px;font-weight:500;">Lặp vô hạn</span>
+                </label>
+                <p id="videoToGifEstimate" style="font-size:12px; color:#a78bfa; margin:4px 0 0; font-weight:500;"></p>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn-secondary" id="videoChooseAnotherBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clip-rule="evenodd" />
+                </svg>
+                Chọn file khác
+              </button>
+              <button class="btn-primary" id="videoToGifConvertBtn">Chuyển video sang GIF</button>
+            </div>
+          </div> <!-- End videoToGifControls -->
+
+          <!-- Mute Video Controls -->
+          <div id="muteVideoControls" class="hidden">
+            <p id="muteVideoFileName" class="hint-text" style="margin-bottom:16px;"></p>
+            <div class="controls-grid" style="margin-top:16px;">
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  Xóa toàn bộ âm thanh khỏi video
+                </label>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn-secondary" id="muteChooseAnotherBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clip-rule="evenodd" />
+                </svg>
+                Chọn file khác
+              </button>
+              <button class="btn-primary" id="muteVideoBtn" disabled>
+                <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                  <path fill-rule="evenodd"
+                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                    clip-rule="evenodd" />
+                </svg>
+                Xóa âm thanh
+              </button>
+              <span id="muteVideoStatus" style="font-size:12px; color:#8892b0; align-self:center;"></span>
+            </div>
+          </div> <!-- End muteVideoControls -->
+
+        </div> <!-- End controlsPanel -->
+ 
+        <!-- Frame Editor Section -->
+        <div id="frameEditorSection" class="hidden" style="margin-top: 10px;">
+          <!-- Top Toolbar -->
+          <div class="frame-editor-toolbar">
+            <div class="frame-editor-info">
+              <span class="badge" id="frameEditorIndexBadge">Frame 1 / 10</span>
+              <span id="frameEditorDelayBadge" style="font-size: 12px; color: #8892b0;">Delay: 100ms</span>
+            </div>
+
+            <!-- Tool selector -->
+            <div class="frame-editor-tools">
+              <div class="effect-options" style="margin-top: 0;">
+                <label class="effect-radio">
+                  <input type="radio" name="frameTool" value="wand" checked />
+                  <span>🪄 Click xóa vùng</span>
+                </label>
+                <label class="effect-radio">
+                  <input type="radio" name="frameTool" value="eraser" />
+                  <span>🖌️ Bút tẩy</span>
+                </label>
+              </div>
+
+              <!-- Wand tolerance (visible when wand is selected) -->
+              <div id="frameWandControls" style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                <span style="color: var(--text-secondary);">Độ nhạy:</span>
+                <input type="range" id="frameTolerance" min="5" max="80" value="30" style="width: 100px;" />
+                <span id="frameToleranceVal" style="font-weight: 600; min-width: 24px;">30</span>
+              </div>
+
+              <!-- Eraser size (visible when eraser is selected) -->
+              <div id="frameEraserControls" style="display: none; align-items: center; gap: 8px; font-size: 13px;">
+                <span style="color: var(--text-secondary);">Cỡ cọ:</span>
+                <input type="range" id="frameBrushSize" min="3" max="50" value="15" style="width: 100px;" />
+                <span id="frameBrushSizeVal" style="font-weight: 600; min-width: 28px;">15px</span>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="frame-editor-actions">
+              <button class="btn-sm btn-secondary" id="frameUndoBtn" title="Hoàn tác thao tác vừa rồi (Ctrl+Z)">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+                  <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Hoàn tác
+              </button>
+              <button class="btn-sm btn-secondary" id="frameApplyAllBtn" title="Xóa vùng màu này ở cùng tọa độ trên TẤT CẢ các frame">
+                🌐 Áp dụng cho mọi Frame
+              </button>
+              <button class="btn-sm btn-secondary" id="frameResetBtn" title="Khôi phục lại frame này">
+                Khôi phục frame
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Canvas Area -->
+          <div class="frame-canvas-container">
+            <!-- Zoom & View controls -->
+            <div class="frame-canvas-header">
+              <div class="frame-zoom-bar">
+                <span class="frame-zoom-title">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                  </svg>
+                  Thu phóng:
+                </span>
+                <div class="frame-zoom-btn-group">
+                  <button type="button" class="btn-zoom-step" id="frameZoomOutBtn" title="Thu nhỏ (−)">−</button>
+                  <span id="frameZoomVal" class="frame-zoom-val">To vừa khung</span>
+                  <button type="button" class="btn-zoom-step" id="frameZoomInBtn" title="Phóng to (+)">+</button>
+                </div>
+                <div class="frame-zoom-presets">
+                  <button type="button" class="btn-zoom-pill active" data-zoom="fit" title="Tự động phóng to vừa khung màn hình">To vừa khung</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="1" title="Kích thước gốc 100%">100%</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="1.5">150%</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="2">200%</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="3">300%</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="4">400%</button>
+                </div>
+              </div>
+              <div class="frame-zoom-tip">
+                <span>💡 Chọn <strong>To vừa khung</strong> hoặc <strong>200% - 300%</strong> để click xóa các chi tiết nhỏ</span>
+              </div>
+            </div>
+
+            <div class="canvas-wrap checkered frame-editor-wrap" id="frameEditorWrap">
+              <canvas id="frameEditorCanvas"></canvas>
+            </div>
+            <div class="frame-nav-controls">
+              <button class="btn-nav" id="framePrevBtn" title="Frame trước (Phím ←)">◀ Frame trước</button>
+              <span id="frameCounterNav" style="font-weight: 600; font-size: 13px; color: var(--text-secondary);">1 / 10</span>
+              <button class="btn-nav" id="frameNextBtn" title="Frame sau (Phím →)">Frame sau ▶</button>
+            </div>
+            <p style="font-size: 12px; color: #8892b0; margin: 8px 0 0; text-align: center;">
+              💡 <strong>Mẹo:</strong> Click chuột vào vùng màu muốn xóa. Giữ phím <strong>Space (Phím cách)</strong> và rê chuột để kéo màn hình khi phóng to.
+            </p>
+          </div>
+
+          <!-- Bottom Timeline Filmstrip -->
+          <div class="frame-filmstrip-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Danh sách các khung hình (Click frame để sửa):</span>
+              <span id="frameFilmstripCount" style="font-size: 12px; color: var(--text-secondary);"></span>
+            </div>
+            <div class="frame-filmstrip" id="frameFilmstrip">
+              <!-- Thumbnails generated by JS -->
+            </div>
+          </div>
+
+          <!-- Export Bar -->
+          <div class="actions" style="margin-top: 20px; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 16px;">
+            <button class="btn-secondary" id="frameChooseAnotherBtn">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+              </svg>
+              Chọn file khác
+            </button>
+            <button class="btn-primary" id="frameEditorExportBtn">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+              Tạo lại GIF từ các Frame đã sửa
+            </button>
+          </div>
+        </div> <!-- End frameEditorSection -->
+
+        <div class="progress-section hidden" id="progressSection">
+          <div class="progress-header">
+            <span class="progress-label" id="progressLabel">Đang xử lý frame...</span>
+            <span class="progress-pct" id="progressPct">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressFill"></div>
+          </div>
+          <div class="frame-info" id="frameInfo"></div>
+        </div>
+
+        <div class="download-section hidden" id="downloadSection">
+          <div class="success-badge">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd" />
+            </svg>
+            <span id="successBadgeText">Xóa nền thành công!</span>
+          </div>
+          <button class="btn-download" id="downloadBtn">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+              <path fill-rule="evenodd"
+                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                clip-rule="evenodd" />
+            </svg>
+            <span id="downloadBtnText">Tải xuống kết quả</span>
+          </button>
+        </div>
+      </div>
+
+
+    </main>
+
+    <section class="features">
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>100% Riêng tư</h3>
+        <p>Mọi thứ xử lý ngay trên máy bạn. File không bao giờ rời khỏi thiết bị.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Nhanh chóng</h3>
+        <p>Thuật toán xử lý từng frame, cho kết quả tức thì.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <h3>Tinh chỉnh linh hoạt</h3>
+        <p>Điều chỉnh độ nhạy màu, làm mềm viền và tốc độ GIF theo ý muốn.</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>GIFEraser · Xử lý hoàn toàn cục bộ · Không cần kết nối internet</p>
+    </footer>
+  </div>
+
+  <canvas id="eyedropCanvas" style="display:none"></canvas>
+  <video id="videoPlayer" playsinline muted style="display:none"></video>
+  <canvas id="img2gifCanvas" style="display:none"></canvas>
+  <canvas id="videoToGifCanvas" style="display:none"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/libgif@0.0.3/libgif.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
