@@ -88,8 +88,8 @@
 
 1. **Clone repository về máy**:
    ```bash
-   git clone https://github.com/your-username/gif-bg-remover.git
-   cd gif-bg-remover
+   git clone https://github.com/thevan1304/mediastudio-local.git
+   cd mediastudio-local
    ```
 
 2. **Cài đặt các gói phụ thuộc**:
@@ -138,9 +138,3 @@
 
 - **100% Client-Side Processing**: Toàn bộ tệp tin hình ảnh, GIF và video tải lên đều được xử lý trực tiếp trong bộ nhớ RAM trình duyệt của bạn thông qua Web Workers và WebAssembly.
 - Không có bất kỳ hình ảnh, video hay dữ liệu cá nhân nào được gửi đến máy chủ bên ngoài.
-
----
-
-## 📄 Bản quyền (License)
-
-Dự án được phân phối dưới giấy phép **ISC License**. Bạn được tự do sử dụng, chỉnh sửa và đóng góp cho dự án.
