@@ -2,10 +2,9 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
-require('dotenv').config();
 
 const app = express();
-const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 3000;
+const PORT = 3000;
 
 app.use(cors());
 
@@ -16,30 +15,24 @@ app.use((req, res, next) => {
   next();
 });
 
-// - npm run dev: phục vụ trực tiếp từ thư mục gốc (D:\gif-bg-remover)
-// - npm run start: phục vụ từ thư mục đóng gói (D:\gif-bg-remover\dist)
+// - npm run dev: phục vụ từ thư mục gốc
+// - npm run start: phục vụ từ thư mục dist/
 const distPath = path.join(__dirname, 'dist');
-const rootPath = path.join(__dirname);
+const isStartMode = process.argv.includes('--dist');
 
-const isStartMode = process.argv.includes('--dist') || 
-                    process.env.npm_lifecycle_event === 'start' || 
-                    process.env.NODE_ENV === 'production';
-
-let publicDir;
+let publicDir = __dirname;
 if (isStartMode) {
   if (!fs.existsSync(path.join(distPath, 'index.html'))) {
     console.warn('⚠️ Thư mục dist/ chưa được build. Đang tự động build...');
     require('./build.js');
   }
   publicDir = distPath;
-} else {
-  publicDir = rootPath;
 }
 
 console.log(`📂 Đang phục vụ static files từ: ${publicDir}`);
 app.use(express.static(publicDir));
 
-// Fallback tất cả route về index.html (tương thích Express 5)
+// Fallback tất cả route về index.html
 app.use((req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'));
 });
@@ -61,4 +54,4 @@ function startServer(port) {
   });
 }
 
-startServer(DEFAULT_PORT);
+startServer(PORT);
