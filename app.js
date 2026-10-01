@@ -2648,20 +2648,123 @@ aiGenerateBtn.addEventListener('click', async () => {
 });
 
 */
-// ─── Animated Particles ───────────────────────────────────────────────────────
-(function() {
-  const c = document.getElementById('bgParticles');
-  for (let i = 0; i < 18; i++) {
-    const p = document.createElement('div');
-    const sz = Math.random() * 3 + 1;
-    Object.assign(p.style, {
-      position:'absolute', width:sz+'px', height:sz+'px', borderRadius:'50%',
-      background:`hsl(${Math.random()>.5?270:330},70%,60%)`,
-      opacity:(Math.random()*.3+.05).toFixed(2),
-      left:(Math.random()*100)+'%', top:(Math.random()*100)+'%',
-      animation:`float ${Math.random()*15+10}s ease-in-out infinite`,
-      animationDelay:`${-Math.random()*15}s`,
-    });
-    c.appendChild(p);
+// ─── Dynamic Interactive Canvas Scene ─────────────────────────────────────────
+(function initDynamicBackground() {
+  const canvas = document.getElementById('bgCanvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  let width, height, dpr;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const colors = [
+    'rgba(168, 85, 247, ', // purple
+    'rgba(56, 189, 248, ',  // cyan/sky
+    'rgba(244, 114, 182, ', // pink
+    'rgba(129, 140, 248, ', // indigo
+    'rgba(255, 255, 255, '  // star white
+  ];
+
+  const particleCount = Math.min(80, Math.max(40, Math.floor((width * height) / 16000)));
+  const particles = [];
+
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: (Math.random() - 0.5) * 0.6,
+      radius: Math.random() * 2 + 1,
+      baseAlpha: Math.random() * 0.45 + 0.2,
+      alpha: 0.3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      pulseSpeed: Math.random() * 0.02 + 0.008,
+      pulseAngle: Math.random() * Math.PI * 2
+    });
+  }
+
+  let mouse = { x: -1000, y: -1000, radius: 130 };
+
+  window.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  window.addEventListener('mouseleave', () => {
+    mouse.x = -1000;
+    mouse.y = -1000;
+  });
+
+  function render() {
+    if (document.hidden) {
+      requestAnimationFrame(render);
+      return;
+    }
+
+    ctx.clearRect(0, 0, width, height);
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+
+      // Mouse repulsion
+      const dx = mouse.x - p.x;
+      const dy = mouse.y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < mouse.radius) {
+        const force = (mouse.radius - dist) / mouse.radius;
+        const angle = Math.atan2(dy, dx);
+        p.x -= Math.cos(angle) * force * 2.5;
+        p.y -= Math.sin(angle) * force * 2.5;
+      }
+
+      // Movement
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Screen wrap
+      if (p.x < -10) p.x = width + 10;
+      else if (p.x > width + 10) p.x = -10;
+      if (p.y < -10) p.y = height + 10;
+      else if (p.y > height + 10) p.y = -10;
+
+      // Pulsing alpha
+      p.pulseAngle += p.pulseSpeed;
+      p.alpha = Math.max(0.1, p.baseAlpha + Math.sin(p.pulseAngle) * 0.2);
+
+      // Draw particle
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + p.alpha + ')';
+      ctx.fill();
+
+      // Connect close particles with delicate light threads
+      for (let j = i + 1; j < particles.length; j++) {
+        const p2 = particles[j];
+        const d = Math.hypot(p.x - p2.x, p.y - p2.y);
+        if (d < 110) {
+          const lineAlpha = (1 - d / 110) * 0.16;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = `rgba(168, 85, 247, ${lineAlpha})`;
+          ctx.lineWidth = 0.75;
+          ctx.stroke();
+        }
+      }
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
 })();
