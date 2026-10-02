@@ -65,7 +65,6 @@ const controlsPanel     = document.getElementById('controlsPanel');
 const tabsContainer     = document.getElementById('tabsContainer');
 const tabBgRemove       = document.getElementById('tabBgRemove');
 const tabFrameEditor    = document.getElementById('tabFrameEditor');
-const tabAnimate        = document.getElementById('tabAnimate');
 
 // ─── Frame Editor DOM refs ────────────────────────────────────────────────────
 const frameEditorSection    = document.getElementById('frameEditorSection');
@@ -141,22 +140,376 @@ let videoToGifFile = null;
 let videoToGifUrl = null;
 
 const bgControls        = document.getElementById('bgControls');
-const animateControls   = document.getElementById('animateControls');
-const animIntensitySlider = document.getElementById('animIntensitySlider');
-const animIntensityVal  = document.getElementById('animIntensityVal');
-const animSpeedSlider   = document.getElementById('animSpeedSlider');
-const animSpeedVal      = document.getElementById('animSpeedVal');
-const animResetBtn      = document.getElementById('animResetBtn');
-const animateBtn        = document.getElementById('animateBtn');
 const mainActions       = document.getElementById('mainActions');
 let currentTab = 'bgRemove';
+
+// ─── i18n ─────────────────────────────────────────────────────────────────────
+const LANGS = {
+  en: { flag: 'https://flagcdn.com/w20/gb.png', flag2x: 'https://flagcdn.com/w40/gb.png', name: 'English' },
+  vi: { flag: 'https://flagcdn.com/w20/vn.png', flag2x: 'https://flagcdn.com/w40/vn.png', name: 'Ti\u1EBFng Vi\u1EC7t' },
+};
+
+const I18N = {
+  en: {
+    heroTitle: 'All-in-One Image, GIF & Video Processing',
+    heroSub: 'Background Removal \xB7 Frame-by-frame Editor \xB7 Video to GIF \xB7 Mute Video \xB7 100% Local',
+    tabBgRemove: 'Remove Background', tabFrameEditor: 'Frame Editor', tabAnimate: 'Animate Effect',
+    tabImgToGif: 'Images to GIF', tabVideoToGif: 'Video to GIF', tabMuteVideo: 'Mute Video',
+    dropTitle: 'Drag & drop image, GIF, or video here', dropSub: 'or',
+    browseBtn: 'Choose Image / GIF / Video',
+    dropInfo: 'Supports JPG, PNG, WEBP, GIF, MP4, WebM, MOV \xB7 Processed right in your browser',
+    previewOriginal: 'Original', previewResult: 'Result',
+    originalWrapTitle: 'Click on trapped background area to remove',
+    manualSeedHintText: 'Click on enclosed background areas to remove manually',
+    placeholderBgRemove: 'Click <strong>Remove Background</strong> to see result',
+    placeholderAnimate: 'Click <strong>Generate Animated GIF</strong> to see result',
+    placeholderImgToGif: 'Click <strong>Create GIF</strong> to see result',
+    placeholderVideoToGif: 'Click <strong>Convert Video to GIF</strong> to see result',
+    placeholderMuteVideo: 'Click <strong>Mute Video</strong> to see result',
+    bgColorLabel: 'Background color to remove',
+    eyedropBtnTitle: 'Pick color from image', eyedropBtn: 'Pick Color',
+    eyedropHint: 'Click on original image to pick background color',
+    toleranceLabel: 'Tolerance:', tolerancePrecise: 'Precise', toleranceWider: 'Wider',
+    featherLabel: 'Feather edge:', featherSharp: 'Sharp', featherSmooth: 'Smooth',
+    removeIslandsLabel: 'Remove enclosed gaps (holes)',
+    removeIslandsHint: 'Careful: may remove details inside the subject (eyes, hands, text...)',
+    speedLabel: 'GIF Speed:', speedSlow: 'Slow', speedFast: 'Fast',
+    compressLabel: 'Compress GIF:', compressHighQuality: 'High Quality', compressSmallSize: 'Small Size',
+    compressHint: '100% size \xB7 Maximum quality (recommended for white/solid backgrounds)',
+    compressLabels: [
+      ['No compression', '100% size \xB7 Maximum quality'],
+      ['Light', '100% size \xB7 Light color compression \xB7 ~70\u201380% file size'],
+      ['Medium', 'Scale 75% \xB7 Good quality \xB7 ~40\u201350% file size'],
+      ['Heavy', 'Scale 50% \xB7 Drop 1/2 frames \xB7 ~15\u201325% file size'],
+      ['Maximum', 'Scale 50% \xB7 Drop 2/3 frames \xB7 Smallest possible'],
+    ],
+    chooseAnotherFile: 'Choose another file',
+    processBtnText: 'Remove Background', processBtnTextImg: 'Remove Image Background', processBtnTextGif: 'Remove GIF Background',
+    animEffectLabel: 'Effect',
+    effectWobble: 'Wobble', effectPulse: 'Pulse', effectBounce: 'Bounce', effectSpin: 'Spin', effectFloat: 'Float',
+    animIntensityLabel: 'Intensity:', animIntensityMild: 'Mild', animIntensityStrong: 'Strong',
+    animSpeedLabel: 'Speed:', animBtnText: 'Generate Animated GIF',
+    img2gifDropTitle: 'Drag & drop multiple images here',
+    img2gifDropSub: 'Supports PNG, JPG, JPEG, WEBP, BMP...',
+    img2gifBrowseBtn: 'Choose Images', img2gifDelayLabel: 'Delay per image:', img2gifSizeLabel: 'Export Size',
+    img2gifSizeOriginal: 'Original', img2gifSizeHalf: 'Scale 50%', img2gifSizeCustom: 'Custom',
+    img2gifWidthPlaceholder: 'Width (px)', img2gifHeightPlaceholder: 'Height (px)',
+    img2gifQualityLabel: 'GIF Quality', qualityHigh: 'High', qualityMedium: 'Medium',
+    qualityLowLight: 'Low (Light)', qualityLowFast: 'Low (Fast)', infiniteLoop: 'Infinite Loop',
+    img2gifClearBtn: 'Clear All', img2gifConvertBtn: 'Create GIF from Images',
+    img2gifSelectedHint: 'images selected \u2014 drag to reorder',
+    videoFpsLabel: 'Frame Rate (FPS):', videoFpsLight: 'Light (5\u20138)', videoFpsRecommended: 'Recommended (10)', videoFpsSmooth: 'Smooth (20)',
+    videoSizeLabel: 'Export Size',
+    videoSize30: 'Scale 30% (~240p \xB7 Ultra light)', videoSize50: 'Scale 50% (~380p \xB7 Standard)', videoSizeOrig: 'Original (Very heavy)',
+    videoDurationLabel: 'Video Segment (Duration)',
+    videoDurationAll: 'Entire video', videoDuration3: 'First 3 seconds', videoDuration5: 'First 5 seconds', videoDurationCustom: 'Custom range',
+    videoRangeFrom: 'From:', videoRangeTo: 's to:', videoColorLabel: 'GIF Color Quality',
+    videoConvertBtn: 'Convert Video to GIF',
+    muteLabel: 'Remove all audio tracks from video', muteBtn: 'Mute Video',
+    frameWandTool: '\uD83E\uDE84 Wand (Click area)', frameEraserTool: '\uD83D\uDD8C\uFE0F Eraser',
+    frameBrushSizeLabel: 'Brush Size:',
+    frameUndoBtn: 'Undo', frameUndoTitle: 'Undo last action (Ctrl+Z)',
+    frameApplyAllBtn: '\uD83C\uDF10 Apply to All Frames', frameApplyAllTitle: 'Erase this color at same position across ALL frames',
+    frameResetBtn: 'Reset Frame', frameResetTitle: 'Restore this frame',
+    frameZoomTitle: 'Zoom:', frameZoomOutTitle: 'Zoom out (\u2212)', frameZoomInTitle: 'Zoom in (+)',
+    frameZoomFit: 'Fit View', frameZoomFitTitle: 'Auto fit to screen', frameZoomOrigTitle: 'Original size 100%',
+    frameZoomTip: '\uD83D\uDCA1 Select <strong>Fit View</strong> or <strong>200%\u2013300%</strong> to easily edit fine details',
+    framePrevBtn: '\u25C4 Prev Frame', framePrevBtnTitle: 'Previous frame (Left arrow)',
+    frameNextBtn: 'Next Frame \u25BA', frameNextBtnTitle: 'Next frame (Right arrow)',
+    frameEditorTip: '\uD83D\uDCA1 <strong>Tip:</strong> Click on color area to erase. Hold <strong>Space</strong> and drag to pan when zoomed in.',
+    frameFilmstripTitle: 'Frames timeline (Click frame to edit):',
+    frameExportBtn: 'Re-create GIF from Edited Frames',
+    progressLabelDefault: 'Processing frames...',
+    successBgRemoved: 'Background removed successfully!', successAnimated: 'Animated GIF generated!',
+    successImgToGif: 'GIF created successfully!', successVideoToGif: 'Video converted to GIF!',
+    successMuted: 'Audio removed successfully!', successFrameExport: 'GIF updated successfully!',
+    downloadResult: 'Download Result', downloadImage: 'Download Image', downloadGif: 'Download GIF',
+    downloadMutedVideo: 'Download Muted Video', downloadEditedGif: 'Download Edited GIF',
+    feat1Title: '100% Private', feat1Desc: 'All processing runs entirely in your browser. No files are ever uploaded to any server \u2014 your data stays yours.',
+    feat2Title: 'Instant Processing', feat2Desc: 'Optimized frame-by-frame algorithms deliver results in seconds, even for large GIFs and long video clips.',
+    feat3Title: 'Precise Controls', feat3Desc: 'Dial in the exact result with adjustable tolerance, edge feathering, manual seed points, and compression levels.',
+    feat4Title: 'Multi-Format Support', feat4Desc: 'Works with JPG, PNG, WEBP, GIF, MP4, WebM and MOV. Edit frames, convert to GIF, or remove audio \u2014 all in one place.',
+    feat5Title: 'Export Ready', feat5Desc: 'Download transparent GIFs, optimized images, muted videos, or animated effects instantly \u2014 no account or sign-up needed.',
+    footerText: 'MediaStudio \xB7 100% Client-Side \xB7 No Internet Connection Required',
+    toastSelectValidFile: 'Please select an image, GIF, or video file!',
+    toastSeedAdded: 'Added erase point!', toastColorSelected: 'Selected color {hex}',
+    toastLoadedFrames: 'Loaded {count} frames!', toastErrorGif: 'Error reading GIF: {err}',
+    toastLoadedImage: 'Image loaded successfully!', toastErrorImage: 'Error reading image!',
+    toastBgRemoved: 'Background removed successfully! \uD83C\uDF89',
+    toastAnimateStaticOnly: 'Animate effect only supports static images, not GIFs!',
+    toastDropImagesOnly: 'Please drop image files!',
+    toastAtLeastTwoImages: 'Please add at least 2 images!',
+    toastGifCreated: 'GIF created successfully! \uD83C\uDF89',
+    toastErrorCreateGif: 'Error creating GIF: {err}',
+    toastLoadedVideo: 'Video loaded successfully!', toastVideoNotSupported: 'Browser does not support this video format.',
+    toastSelectVideoFirst: 'Please select a video first!',
+    toastVideoToGifSuccess: 'Converted video to GIF successfully! \uD83C\uDF89',
+    toastVideoToGifError: 'Error converting video: {err}',
+    toastMuteSuccess: 'Audio removed successfully! \uD83C\uDF89', toastMuteError: 'Error removing audio: {err}',
+    toastGifLargeWarning: 'GIF larger than 1MB ({size}). Increase compression to reduce size!',
+    toastGifEncodeError: 'Error encoding GIF: {err}',
+    toastNoUndo: 'Nothing to undo on this frame!', toastUndid: 'Undid action on this frame!',
+    toastFrameReset: 'Reset this frame to original!',
+    toastClickPointFirst: 'Please click to erase an area on the frame first, then Apply to All Frames!',
+    toastApplyAllSuccess: 'Applied area erase at ({x}, {y}) across all {count} frames! \uD83C\uDF89',
+    toastNoFramesToExport: 'No frames to export!',
+    toastExportSuccess: 'Exported GIF from edited frames successfully! \uD83C\uDF89',
+    toastExportError: 'Error exporting GIF: {err}',
+    reading: 'reading...', framesCount: 'frames', readingVideo: 'reading video...', secondsUnit: 'seconds',
+    videoEstimate: '\u26A1 Estimated: ~{frames} frames ({w}\xD7{h}px \xB7 ~{size})',
+    confirmManyFrames: 'This video will generate {count} frames and may take a while. Continue?',
+    encodingFrames: 'Encoding {count} frames...', preparingFrame: 'Preparing frame {i} / {total}',
+    extractingFrame: 'Extracting frame {i}/{total}', processingFrame: 'Processing frame {i} / {total}',
+    processingImage: 'Processing image...', preparingVideo: 'Preparing video file...',
+    loadingVideo: 'Loading video into memory...', removingAudio: 'Removing audio from video...',
+    finalizingVideo: 'Finalizing video...', preparingFrames: 'Preparing frames...',
+    preparing: 'Preparing...', processing: 'Processing...', creating: 'Creating frames...', combining: 'Combining GIF...',
+  },
+  vi: {
+    heroTitle: 'X\u1EED l\xFD \u1EA2nh, GIF & Video \u0111a n\u0103ng tr\xEAn tr\xECnh duy\u1EC7t',
+    heroSub: 'X\xF3a n\u1EC1n \xB7 S\u1EEDa t\u1EEDng frame \xB7 Video sang GIF \xB7 T\u1EAFt ti\u1EBFng video \xB7 100% Local',
+    tabBgRemove: 'X\xF3a n\u1EC1n', tabFrameEditor: 'S\u1EEDa t\u1EEDng Frame', tabAnimate: 'T\u1EA1o hi\u1EC7u \u1EE9ng (Animate)',
+    tabImgToGif: '\u1EA2nh sang GIF', tabVideoToGif: 'Video sang GIF', tabMuteVideo: 'X\xF3a \xE2m thanh',
+    dropTitle: 'K\xE9o th\u1EA3 file \u1EA3nh, GIF ho\u1EB7c video v\xE0o \u0111\xE2y', dropSub: 'ho\u1EB7c',
+    browseBtn: 'Ch\u1ECDn file \u1EA2nh/GIF/Video',
+    dropInfo: 'H\u1ED7 tr\u1EE3 JPG, PNG, WEBP, GIF, MP4, WebM, MOV \xB7 X\u1EED l\xFD ngay tr\xEAn m\xE1y b\u1EA1n',
+    previewOriginal: 'G\u1ED1c', previewResult: 'K\u1EBFt qu\u1EA3',
+    originalWrapTitle: 'Click v\xE0o v\xF9ng n\u1EC1n b\u1ECB k\u1EB9t \u0111\u1EC3 x\xF3a',
+    manualSeedHintText: 'Click v\xE0o v\xF9ng n\u1EC1n l\u1ECDt th\u1ECDm \u0111\u1EC3 x\xF3a th\u1EE7 c\xF4ng',
+    placeholderBgRemove: 'Nh\u1EA5n <strong>X\xF3a n\u1EC1n</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
+    placeholderAnimate: 'Nh\u1EA5n <strong>T\u1EA1o GIF chuy\u1EC3n \u0111\u1ED9ng</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
+    placeholderImgToGif: 'Nh\u1EA5n <strong>Chuy\u1EC3n sang GIF</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
+    placeholderVideoToGif: 'Nh\u1EA5n <strong>Chuy\u1EC3n video sang GIF</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
+    placeholderMuteVideo: 'Nh\u1EA5n <strong>X\xF3a \xE2m thanh</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
+    bgColorLabel: 'M\xE0u n\u1EC1n c\u1EA7n x\xF3a',
+    eyedropBtnTitle: 'Ch\u1ECDn m\xE0u t\u1EEB \u1EA3nh', eyedropBtn: 'H\xFAt m\xE0u',
+    eyedropHint: 'Nh\u1EA5p v\xE0o \u1EA3nh g\u1ED1c \u0111\u1EC3 ch\u1ECDn m\xE0u n\u1EC1n',
+    toleranceLabel: '\u0110\u1ED9 nh\u1EA1y:', tolerancePrecise: 'Ch\xEDnh x\xE1c', toleranceWider: 'R\u1ED9ng h\u01A1n',
+    featherLabel: 'L\xE0m m\u1EC1m vi\u1EC1n:', featherSharp: 'S\u1EAFc n\xE9t', featherSmooth: 'M\u1EC1m m\u1EA1i',
+    removeIslandsLabel: 'X\xF3a n\u1EC1n l\u1ECDt th\u1ECDm (l\u1ED7 h\u1ED5ng)',
+    removeIslandsHint: 'C\u1EA9n th\u1EADn: c\xF3 th\u1EC3 x\xF3a nh\u1EA7m chi ti\u1EBFt b\xEAn trong \u0111\u1ED1i t\u01B0\u1EE3ng (m\u1EAFt, tay, ch\u1EEF...)',
+    speedLabel: 'T\u1ED1c \u0111\u1ED9 GIF:', speedSlow: 'Ch\u1EADm', speedFast: 'Nhanh',
+    compressLabel: 'N\xE9n GIF:', compressHighQuality: 'Ch\u1EA5t l\u01B0\u1EE3ng cao', compressSmallSize: 'Dung l\u01B0\u1EE3ng nh\u1ECF',
+    compressHint: '100% k\xEDch th\u01B0\u1EDBc \xB7 Ch\u1EA5t l\u01B0\u1EE3ng t\u1ED1i \u0111a (khuy\u1EBFn ngh\u1ECB cho n\u1EC1n tr\u1EAFng/\u0111\u01A1n m\xE0u)',
+    compressLabels: [
+      ['Kh\xF4ng n\xE9n', '100% k\xEDch th\u01B0\u1EDBc \xB7 Ch\u1EA5t l\u01B0\u1EE3ng t\u1ED1i \u0111a'],
+      ['Nh\u1EB9', '100% k\xEDch th\u01B0\u1EDBc \xB7 M\xE0u \u0111\u01B0\u1EE3c n\xE9n nh\u1EB9 \xB7 ~70\u201380% dung l\u01B0\u1EE3ng'],
+      ['Trung b\xECnh', 'Thu nh\u1ECF 75% \xB7 Ch\u1EA5t l\u01B0\u1EE3ng t\u1ED1t \xB7 ~40\u201350% dung l\u01B0\u1EE3ng'],
+      ['M\u1EA1nh', 'Thu nh\u1ECF 50% \xB7 B\u1ECF 1/2 frame \xB7 ~15\u201325% dung l\u01B0\u1EE3ng'],
+      ['T\u1ED1i \u0111a', 'Thu nh\u1ECF 50% \xB7 B\u1ECF 2/3 frame \xB7 Nh\u1ECF nh\u1EA5t c\xF3 th\u1EC3'],
+    ],
+    chooseAnotherFile: 'Ch\u1ECDn file kh\xE1c',
+    processBtnText: 'X\xF3a n\u1EC1n \u1EA2nh/GIF', processBtnTextImg: 'X\xF3a n\u1EC1n \u1EA2nh', processBtnTextGif: 'X\xF3a n\u1EC1n GIF',
+    animEffectLabel: 'Hi\u1EC7u \u1EE9ng (Effect)',
+    effectWobble: 'L\u1EAFc l\u01B0', effectPulse: 'Nh\u1ECBp tim', effectBounce: 'N\u1EA3y l\xEAn', effectSpin: 'Xoay tr\xF2n', effectFloat: 'Bay b\u1ED5ng',
+    animIntensityLabel: 'Bi\xEAn \u0111\u1ED9 (Intensity):', animIntensityMild: 'Nh\u1EB9', animIntensityStrong: 'M\u1EA1nh',
+    animSpeedLabel: 'T\u1ED1c \u0111\u1ED9 (Speed):', animBtnText: 'T\u1EA1o GIF chuy\u1EC3n \u0111\u1ED9ng',
+    img2gifDropTitle: 'K\xE9o th\u1EA3 nhi\u1EC1u \u1EA3nh v\xE0o \u0111\xE2y',
+    img2gifDropSub: 'H\u1ED7 tr\u1EE3 PNG, JPG, JPEG, WEBP, BMP...',
+    img2gifBrowseBtn: 'Ch\u1ECDn \u1EA3nh', img2gifDelayLabel: 'T\u1ED1c \u0111\u1ED9 m\u1ED7i \u1EA3nh:', img2gifSizeLabel: 'K\xEDch th\u01B0\u1EDBc xu\u1EA5t',
+    img2gifSizeOriginal: 'Gi\u1EEF nguy\xEAn', img2gifSizeHalf: 'Thu nh\u1ECF 50%', img2gifSizeCustom: 'Tu\u1EF3 ch\u1EC9nh',
+    img2gifWidthPlaceholder: 'R\u1ED9ng (px)', img2gifHeightPlaceholder: 'Cao (px)',
+    img2gifQualityLabel: 'Ch\u1EA5t l\u01B0\u1EE3ng GIF', qualityHigh: 'Cao', qualityMedium: 'Trung b\xECnh',
+    qualityLowLight: 'Th\u1EA5p (Nh\u1EB9)', qualityLowFast: 'Th\u1EA5p (Nhanh)', infiniteLoop: 'L\u1EB7p v\xF4 h\u1EA1n',
+    img2gifClearBtn: 'X\xF3a t\u1EA5t c\u1EA3', img2gifConvertBtn: 'T\u1EA1o GIF t\u1EEB \u1EA3nh',
+    img2gifSelectedHint: '\u1EA3nh \u0111\xE3 ch\u1ECDn \u2014 k\xE9o \u0111\u1EC3 s\u1EAFp x\u1EBFp l\u1EA1i',
+    videoFpsLabel: 'T\u1ED1c \u0111\u1ED9 khung h\xECnh (FPS):',
+    videoFpsLight: 'Nh\u1EB9 (5\u20138)', videoFpsRecommended: 'Khuy\xEAn d\xF9ng (10)', videoFpsSmooth: 'M\u01B0\u1EE3t (20)',
+    videoSizeLabel: 'K\xEDch th\u01B0\u1EDBc xu\u1EA5t',
+    videoSize30: 'Thu nh\u1ECF 30% (~240p \xB7 Si\xEAu nh\u1EB9)', videoSize50: 'Thu nh\u1ECF 50% (~380p \xB7 Chu\u1EA9n)', videoSizeOrig: 'Gi\u1EEF nguy\xEAn (R\u1EA5t n\u1EB7ng)',
+    videoDurationLabel: '\u0110o\u1EA1n video chuy\u1EC3n \u0111\u1ED5i (Th\u1EDDi l\u01B0\u1EE3ng)',
+    videoDurationAll: 'To\xE0n b\u1ED9 video', videoDuration3: '3 gi\xE2y \u0111\u1EA7u', videoDuration5: '5 gi\xE2y \u0111\u1EA7u', videoDurationCustom: 'T\xF9y ch\u1EC9nh gi\xE2y',
+    videoRangeFrom: 'T\u1EEB:', videoRangeTo: 's \u0111\u1EBFn:', videoColorLabel: 'Ch\u1EA5t l\u01B0\u1EE3ng m\xE0u GIF',
+    videoConvertBtn: 'Chuy\u1EC3n video sang GIF',
+    muteLabel: 'X\xF3a to\xE0n b\u1ED9 \xE2m thanh kh\u1ECFi video', muteBtn: 'X\xF3a \xE2m thanh',
+    frameWandTool: '\uD83E\uDE84 Click x\xF3a v\xF9ng', frameEraserTool: '\uD83D\uDD8C\uFE0F B\xFAt t\u1EA9y',
+    frameBrushSizeLabel: 'C\u1EE1 c\u1ECD:',
+    frameUndoBtn: 'Ho\xE0n t\xE1c', frameUndoTitle: 'Ho\xE0n t\xE1c thao t\xE1c v\u1EEBa r\u1ED3i (Ctrl+Z)',
+    frameApplyAllBtn: '\uD83C\uDF10 \xC1p d\u1EE5ng cho m\u1ECDi Frame', frameApplyAllTitle: 'X\xF3a v\xF9ng m\xE0u n\xE0y \u1EDF c\xF9ng t\u1ECDa \u0111\u1ED9 tr\xEAn T\u1EA4T C\u1EA2 c\xE1c frame',
+    frameResetBtn: 'Kh\xF4i ph\u1EE5c frame', frameResetTitle: 'Kh\xF4i ph\u1EE5c l\u1EA1i frame n\xE0y',
+    frameZoomTitle: 'Thu ph\xF3ng:', frameZoomOutTitle: 'Thu nh\u1ECF (\u2212)', frameZoomInTitle: 'Ph\xF3ng to (+)',
+    frameZoomFit: 'To v\u1EEDa khung', frameZoomFitTitle: 'T\u1EF1 \u0111\u1ED9ng ph\xF3ng to v\u1EEDa khung m\xE0n h\xECnh', frameZoomOrigTitle: 'K\xEDch th\u01B0\u1EDBc g\u1ED1c 100%',
+    frameZoomTip: '\uD83D\uDCA1 Ch\u1ECDn <strong>To v\u1EEDa khung</strong> ho\u1EB7c <strong>200%\u2013300%</strong> \u0111\u1EC3 click x\xF3a c\xE1c chi ti\u1EBFt nh\u1ECF',
+    framePrevBtn: '\u25C4 Frame tr\u01B0\u1EDBc', framePrevBtnTitle: 'Frame tr\u01B0\u1EDBc (Ph\xEDm \u2190)',
+    frameNextBtn: 'Frame sau \u25BA', frameNextBtnTitle: 'Frame sau (Ph\xEDm \u2192)',
+    frameEditorTip: '\uD83D\uDCA1 <strong>M\u1EB9o:</strong> Click chu\u1ED9t v\xE0o v\xF9ng m\xE0u mu\u1ED1n x\xF3a. Gi\u1EEF ph\xEDm <strong>Space</strong> v\xE0 r\xEA chu\u1ED9t \u0111\u1EC3 k\xE9o m\xE0n h\xECnh khi ph\xF3ng to.',
+    frameFilmstripTitle: 'Danh s\xE1ch c\xE1c khung h\xECnh (Click frame \u0111\u1EC3 s\u1EEDa):',
+    frameExportBtn: 'T\u1EA1o l\u1EA1i GIF t\u1EEB c\xE1c Frame \u0111\xE3 s\u1EEDa',
+    progressLabelDefault: '\u0110ang x\u1EED l\xFD frame...',
+    successBgRemoved: 'X\xF3a n\u1EC1n th\xE0nh c\xF4ng!', successAnimated: 'T\u1EA1o GIF chuy\u1EC3n \u0111\u1ED9ng th\xE0nh c\xF4ng!',
+    successImgToGif: 'T\u1EA1o GIF th\xE0nh c\xF4ng!', successVideoToGif: 'Chuy\u1EC3n video sang GIF th\xE0nh c\xF4ng!',
+    successMuted: 'X\xF3a \xE2m thanh th\xE0nh c\xF4ng!', successFrameExport: '\u0110\xE3 c\u1EADp nh\u1EADt GIF th\xE0nh c\xF4ng!',
+    downloadResult: 'T\u1EA3i xu\u1ED1ng k\u1EBFt qu\u1EA3', downloadImage: 'T\u1EA3i xu\u1ED1ng \u1EA2nh', downloadGif: 'T\u1EA3i xu\u1ED1ng GIF',
+    downloadMutedVideo: 'T\u1EA3i xu\u1ED1ng video kh\xF4ng ti\u1EBFng', downloadEditedGif: 'T\u1EA3i xu\u1ED1ng GIF \u0111\xE3 s\u1EEDa',
+    feat1Title: '100% Ri\xEAng t\u01B0', feat1Desc: 'M\u1ECDi x\u1EED l\xFD ch\u1EA1y ngay tr\xEAn tr\xECnh duy\u1EC7t. Kh\xF4ng c\xF3 file n\xE0o đ\u01B0\u1EE3c t\u1EA3i l\xEAn server \u2014 d\u1EEF li\u1EC7u lu\xF4n n\u1EB1m tr\xEAn m\xE1y b\u1EA1n.',
+    feat2Title: 'X\u1EED l\xFD t\u1EE9c th\xEC', feat2Desc: 'Thu\u1EADt to\xE1n t\u1ED1i \u01B0u cho t\u1EEDng frame, cho k\u1EBFt qu\u1EA3 trong v\xE0i gi\xE2y, k\u1EC3 c\u1EA3 GIF l\u1EDBn v\xE0 video d\xE0i.',
+    feat3Title: 'Ti\u1EC1nh ch\u1EC9nh ch\xEDnh x\xE1c', feat3Desc: '\u0110i\u1EC1u ch\u1EC9nh \u0111\u1ED9 nh\u1EA1y, l\xE0m m\u1EC1m vi\u1EC1n, ch\u1EA5m th\u1EE7 c\xF4ng v\xE0 m\u1EE9c n\xE9n \u0111\u1EC3 c\xF3 k\u1EBFt qu\u1EA3 ch\xEDnh x\xE1c nh\u1EA5t.',
+    feat4Title: 'H\u1ED7 tr\u1EE3 nhi\u1EC1u đ\u1ECBnh d\u1EA1ng', feat4Desc: 'H\u1ED7 tr\u1EE3 JPG, PNG, WEBP, GIF, MP4, WebM v\xE0 MOV. S\u1EEDa frame, chuy\u1EC3n video sang GIF, x\xF3a \xE2m thanh \u2014 t\u1EA5t c\u1EA3 trong m\u1ED9t n\u01A1i.',
+    feat5Title: 'T\u1EA3i xu\u1ED1ng ngay', feat5Desc: 'T\u1EA3i GIF trong su\u1ED1t, \u1EA3nh t\u1ED1i \u01B0u, video kh\xF4ng ti\u1EBFng hay hi\u1EC7u \u1EE9ng chuy\u1EC3n đ\u1ED9ng t\u1EE9c th\xEC \u2014 kh\xF4ng c\u1EA7n t\u1EA1o t\xE0i kho\u1EA3n.',
+    footerText: 'MediaStudio \xB7 X\u1EED l\xFD ho\xE0n to\xE0n c\u1EE5c b\u1ED9 \xB7 Kh\xF4ng c\u1EA7n k\u1EBFt n\u1ED1i internet',
+    toastSelectValidFile: 'Vui l\xF2ng ch\u1ECDn file \u1EA2nh, GIF ho\u1EB7c video!',
+    toastSeedAdded: '\u0110\xE3 ch\u1EA5m th\xEAm v\xF9ng x\xF3a!', toastColorSelected: '\u0110\xE3 ch\u1ECDn m\xE0u {hex}',
+    toastLoadedFrames: '\u0110\xE3 t\u1EA3i {count} frames!', toastErrorGif: 'L\u1ED7i \u0111\u1ECDc GIF: {err}',
+    toastLoadedImage: '\u0110\xE3 t\u1EA3i \u1EA3nh th\xE0nh c\xF4ng!', toastErrorImage: 'L\u1ED7i \u0111\u1ECDc \u1EA3nh!',
+    toastBgRemoved: '\u0110\xE3 x\xF3a n\u1EC1n xong! \uD83C\uDF89',
+    toastAnimateStaticOnly: 'T\xEDnh n\u0103ng T\u1EA1o hi\u1EC7u \u1EE9ng ch\u1EC9 h\u1ED7 tr\u1EE3 \u1EA2nh t\u0129nh, kh\xF4ng h\u1ED7 tr\u1EE3 GIF!',
+    toastDropImagesOnly: 'Vui l\xF2ng th\u1EA3 file \u1EA3nh!',
+    toastAtLeastTwoImages: 'Vui l\xF2ng th\xEAm \xEDt nh\u1EA5t 2 \u1EA3nh!',
+    toastGifCreated: 'T\u1EA1o GIF th\xE0nh c\xF4ng! \uD83C\uDF89',
+    toastErrorCreateGif: 'L\u1ED7i t\u1EA1o GIF: {err}',
+    toastLoadedVideo: '\u0110\xE3 t\u1EA3i video th\xE0nh c\xF4ng!', toastVideoNotSupported: 'Tr\xECnh duy\u1EC7t kh\xF4ng h\u1ED7 tr\u1EE3 \u0111\u1ECBnh d\u1EA1ng video n\xE0y.',
+    toastSelectVideoFirst: 'H\xE3y ch\u1ECDn video tr\u01B0\u1EDBc!',
+    toastVideoToGifSuccess: 'Chuy\u1EC3n video sang GIF th\xE0nh c\xF4ng! \uD83C\uDF89',
+    toastVideoToGifError: 'L\u1ED7i chuy\u1EC3n video: {err}',
+    toastMuteSuccess: 'X\xF3a \xE2m thanh th\xE0nh c\xF4ng! \uD83C\uDF89', toastMuteError: 'L\u1ED7i x\xF3a \xE2m thanh: {err}',
+    toastGifLargeWarning: 'GIF l\u1EDBn h\u01A1n 1MB ({size}). T\u0103ng m\u1EE9c N\xE9n \u0111\u1EC3 gi\u1EA3m ti\u1EBFp!',
+    toastGifEncodeError: 'L\u1ED7i encode GIF: {err}',
+    toastNoUndo: 'Ch\u01B0a c\xF3 thao t\xE1c n\xE0o \u0111\u1EC3 ho\xE0n t\xE1c tr\xEAn frame n\xE0y!', toastUndid: '\u0110\xE3 ho\xE0n t\xE1c frame n\xE0y!',
+    toastFrameReset: '\u0110\xE3 kh\xF4i ph\u1EE5c frame n\xE0y v\u1EC1 ban \u0111\u1EA7u!',
+    toastClickPointFirst: 'H\xE3y click x\xF3a m\u1ED9t \u0111i\u1EC3m tr\xEAn frame tr\u01B0\u1EDBc, r\u1ED3i m\u1EDBi b\u1EA5m \xC1p d\u1EE5ng cho m\u1ECDi Frame!',
+    toastApplyAllSuccess: '\u0110\xE3 \xE1p d\u1EE5ng x\xF3a v\xF9ng t\u1EA1i ({x}, {y}) tr\xEAn to\xE0n b\u1ED9 {count} frame! \uD83C\uDF89',
+    toastNoFramesToExport: 'Ch\u01B0a c\xF3 frame n\xE0o \u0111\u1EC3 xu\u1EA5t!',
+    toastExportSuccess: 'Xu\u1EA5t GIF t\u1EEB c\xE1c frame \u0111\xE3 s\u1EEDa th\xE0nh c\xF4ng! \uD83C\uDF89',
+    toastExportError: 'L\u1ED7i xu\u1EA5t GIF: {err}',
+    reading: '\u0111ang \u0111\u1ECDc...', framesCount: 'khung h\xECnh', readingVideo: '\u0111ang \u0111\u1ECDc video...', secondsUnit: 'gi\xE2y',
+    videoEstimate: '\u26A1 D\u1EF1 ki\u1EBFn: ~{frames} khung h\xECnh ({w}\xD7{h}px \xB7 ~{size})',
+    confirmManyFrames: 'Video n\xE0y s\u1EBD t\u1EA1o {count} khung h\xECnh v\xE0 c\xF3 th\u1EC3 m\u1EA5t nhi\u1EC1u th\u1EDDi gian. B\u1EA1n v\u1EABn mu\u1ED1n ti\u1EBFp t\u1EE5c?',
+    encodingFrames: '\u0110ang m\xE3 h\xF3a {count} frames...', preparingFrame: 'Chu\u1EA9n b\u1ECB frame {i} / {total}',
+    extractingFrame: '\u0110ang l\u1EA5y khung h\xECnh {i}/{total}', processingFrame: 'X\u1EED l\xFD frame {i} / {total}',
+    processingImage: '\u0110ang x\u1EED l\xFD \u1EA3nh...', preparingVideo: '\u0110ang chu\u1EA9n b\u1ECB file video...',
+    loadingVideo: '\u0110ang n\u1EA1p video v\xE0o b\u1ED9 nh\u1EDB...', removingAudio: '\u0110ang x\xF3a \xE2m thanh kh\u1ECFi video...',
+    finalizingVideo: '\u0110ang ho\xE0n t\u1EA5t \u0111\xF3ng g\xF3i video...', preparingFrames: '\u0110ang chu\u1EA9n b\u1ECB c\xE1c frame...',
+    preparing: '\u0110ang chu\u1EA9n b\u1ECB...', processing: '\u0110ang x\u1EED l\xFD...', creating: '\u0110ang t\u1EA1o frame...', combining: '\u0110ang gh\xE9p file GIF...',
+  }
+};
+
+let currentLang = (function() {
+  try { return localStorage.getItem('mediastudio_lang') || 'en'; } catch(e) { return 'en'; }
+})();
+
+function t(key, params) {
+  var dict = I18N[currentLang] || I18N.en;
+  var str = (dict[key] !== undefined) ? dict[key] : ((I18N.en[key] !== undefined) ? I18N.en[key] : key);
+  if (typeof str === 'string' && params) {
+    Object.keys(params).forEach(function(k) { str = str.split('{' + k + '}').join(String(params[k])); });
+  }
+  return str;
+}
+
+function applyI18nToDOM() {
+  document.documentElement.lang = currentLang;
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var val = t(el.getAttribute('data-i18n'));
+    if (val) el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
+    var val = t(el.getAttribute('data-i18n-html'));
+    if (val) el.innerHTML = val;
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+    var val = t(el.getAttribute('data-i18n-title'));
+    if (val) el.title = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+    var val = t(el.getAttribute('data-i18n-placeholder'));
+    if (val) el.placeholder = val;
+  });
+}
+
+function setLanguage(lang) {
+  if (!I18N[lang]) lang = 'en';
+  currentLang = lang;
+  try { localStorage.setItem('mediastudio_lang', lang); } catch(e) {}
+
+  var info = LANGS[lang] || LANGS.en;
+  var flagEl = document.getElementById('langPickerFlag');
+  var nameEl = document.getElementById('langPickerName');
+  if (flagEl) {
+    flagEl.src = info.flag;
+    flagEl.srcset = info.flag2x + ' 2x';
+    flagEl.alt = info.name;
+  }
+  if (nameEl) nameEl.textContent = info.name;
+  document.querySelectorAll('.lang-option').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+  });
+
+  applyI18nToDOM();
+
+  // Dynamic compress labels
+  try {
+    var lv = parseInt(compressSlider.value) || 0;
+    var labels = (I18N[currentLang] || I18N.en).compressLabels[lv];
+    if (labels) { compressVal.textContent = labels[0]; compressHint.textContent = labels[1]; }
+  } catch(e) {}
+
+  // Update placeholder
+  try {
+    if (placeholderResult && resultImg.classList.contains('hidden') && resultVideo.classList.contains('hidden')) {
+      var phMap = { bgRemove:'placeholderBgRemove', imgToGif:'placeholderImgToGif', videoToGif:'placeholderVideoToGif', muteVideo:'placeholderMuteVideo' };
+      var phKey = phMap[currentTab] || 'placeholderBgRemove';
+      placeholderResult.innerHTML = '<p>' + t(phKey) + '</p>';
+    }
+  } catch(e) {}
+
+  // Update dynamic btn texts
+  try {
+    if (currentFile) {
+      if (isStaticImage && processBtnText) processBtnText.textContent = t('processBtnTextImg');
+      else if (currentFile.type === 'image/gif' && processBtnText) processBtnText.textContent = t('processBtnTextGif');
+    }
+    if (currentTab === 'videoToGif') updateVideoToGifEstimate();
+    if (currentTab === 'frameEditor' && gifFrames && gifFrames.length > 0) {
+      if (frameFilmstripCount) frameFilmstripCount.textContent = gifFrames.length + ' ' + t('framesCount');
+      if (currentZoom === 'fit' && frameZoomVal) {
+        frameZoomVal.textContent = Math.round(zoomNumeric * 100) + '% (' + t('frameZoomFit') + ')';
+      }
+    }
+  } catch(e) {}
+}
+
+// ─── Language Picker Dropdown ─────────────────────────────────────────────────
+(function initLangPicker() {
+  var wrap = document.getElementById('langPickerWrap');
+  var trigger = document.getElementById('langPickerTrigger');
+  var dropdown = document.getElementById('langDropdown');
+  if (!wrap || !trigger || !dropdown) return;
+
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var isOpen = wrap.classList.toggle('open');
+    trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+
+  dropdown.querySelectorAll('.lang-option').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      setLanguage(btn.getAttribute('data-lang'));
+      wrap.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  document.addEventListener('click', function() {
+    wrap.classList.remove('open');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      wrap.classList.remove('open');
+      if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    }
+  });
+})();
+
 
 
 // ─── Tab Switching ────────────────────────────────────────────────────────────
 function switchTab(tab) {
   currentTab = tab;
-  [tabBgRemove, tabFrameEditor, tabAnimate, tabImgToGif, tabVideoToGif, tabMuteVideo].forEach(t => t.classList.remove('active'));
-  [bgControls, animateControls, imgToGifControls, videoToGifControls, muteVideoControls].forEach(c => c.classList.add('hidden'));
+  [tabBgRemove, tabFrameEditor, tabImgToGif, tabVideoToGif, tabMuteVideo].forEach(t => t.classList.remove('active'));
+  [bgControls, imgToGifControls, videoToGifControls, muteVideoControls].forEach(c => c.classList.add('hidden'));
   
   const isEditor = (tab === 'frameEditor');
   if (frameEditorSection) frameEditorSection.classList.toggle('hidden', !isEditor);
@@ -180,7 +533,7 @@ function switchTab(tab) {
   if (originalWrap) {
     if (tab === 'bgRemove') {
       originalWrap.style.cursor = 'crosshair';
-      originalWrap.title = 'Click vào vùng nền bị kẹt để xóa';
+      originalWrap.title = t('originalWrapTitle');
     } else {
       originalWrap.style.cursor = 'default';
       originalWrap.title = '';
@@ -198,14 +551,14 @@ function switchTab(tab) {
       resultVideo.classList.remove('hidden');
       resultImg.classList.add('hidden');
       if (placeholderResult) placeholderResult.style.display = 'none';
-      if (successBadgeText) successBadgeText.textContent = 'Xóa âm thanh thành công!';
-      downloadBtnText.textContent = 'Tải xuống video không tiếng';
+      if (successBadgeText) successBadgeText.textContent = t('successMuted');
+      downloadBtnText.textContent = t('downloadMutedVideo');
       downloadSection.classList.remove('hidden');
     } else {
       resultVideo.classList.add('hidden');
       resultImg.classList.add('hidden');
       if (placeholderResult) {
-        placeholderResult.innerHTML = '<p>Nhấn <strong>Xóa âm thanh</strong> để xem kết quả</p>';
+        placeholderResult.innerHTML = `<p>${t('placeholderMuteVideo')}</p>`;
         placeholderResult.style.display = '';
       }
       downloadSection.classList.add('hidden');
@@ -222,13 +575,13 @@ function switchTab(tab) {
       resultImg.src = resultBlobUrl;
       resultImg.classList.remove('hidden');
       if (placeholderResult) placeholderResult.style.display = 'none';
-      if (successBadgeText) successBadgeText.textContent = 'Chuyển video sang GIF thành công!';
-      downloadBtnText.textContent = 'Tải xuống GIF';
+      if (successBadgeText) successBadgeText.textContent = t('successVideoToGif');
+      downloadBtnText.textContent = t('downloadGif');
       downloadSection.classList.remove('hidden');
     } else {
       resultImg.classList.add('hidden');
       if (placeholderResult) {
-        placeholderResult.innerHTML = '<p>Nhấn <strong>Chuyển video sang GIF</strong> để xem kết quả</p>';
+        placeholderResult.innerHTML = `<p>${t('placeholderVideoToGif')}</p>`;
         placeholderResult.style.display = '';
       }
       downloadSection.classList.add('hidden');
@@ -238,15 +591,11 @@ function switchTab(tab) {
     if (tab === 'bgRemove') {
       tabBgRemove.classList.add('active');
       bgControls.classList.remove('hidden');
-      if (placeholderResult) placeholderResult.innerHTML = '<p>Nhấn <strong>Xóa nền</strong> để xem kết quả</p>';
-    } else if (tab === 'animate') {
-      tabAnimate.classList.add('active');
-      animateControls.classList.remove('hidden');
-      if (placeholderResult) placeholderResult.innerHTML = '<p>Nhấn <strong>Tạo GIF chuyển động</strong> để xem kết quả</p>';
+      if (placeholderResult) placeholderResult.innerHTML = `<p>${t('placeholderBgRemove')}</p>`;
     } else if (tab === 'imgToGif') {
       tabImgToGif.classList.add('active');
       imgToGifControls.classList.remove('hidden');
-      if (placeholderResult) placeholderResult.innerHTML = '<p>Nhấn <strong>Chuyển sang GIF</strong> để xem kết quả</p>';
+      if (placeholderResult) placeholderResult.innerHTML = `<p>${t('placeholderImgToGif')}</p>`;
     }
 
     if (resultBlobUrl) {
@@ -267,14 +616,12 @@ function configureTabsForFile(fileType) {
   const isGif = fileType === 'gif';
   tabBgRemove.style.display = isVideo ? 'none' : '';
   tabFrameEditor.style.display = isGif ? '' : 'none';
-  tabAnimate.style.display = (!isVideo && !isGif) ? '' : 'none';
   tabImgToGif.style.display = (!isVideo && !isGif) ? '' : 'none';
   tabVideoToGif.style.display = isVideo ? '' : 'none';
   tabMuteVideo.style.display = isVideo ? '' : 'none';
 }
 tabBgRemove.addEventListener('click', () => switchTab('bgRemove'));
 tabFrameEditor.addEventListener('click', () => switchTab('frameEditor'));
-tabAnimate.addEventListener('click', () => switchTab('animate'));
 tabImgToGif.addEventListener('click', () => switchTab('imgToGif'));
 tabVideoToGif.addEventListener('click', () => switchTab('videoToGif'));
 tabMuteVideo.addEventListener('click', () => switchTab('muteVideo'));
@@ -291,7 +638,7 @@ if (frameChooseAnotherBtn) frameChooseAnotherBtn.addEventListener('click', reset
 dropZone.addEventListener('drop', e => {
   const file = e.dataTransfer.files[0];
   if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) loadFile(file);
-  else showToast('Vui lòng chọn file Ảnh, GIF hoặc video!', 'error');
+  else showToast(t('toastSelectValidFile'), 'error');
 });
 fileInput.addEventListener('change', () => {
   if (fileInput.files[0]) loadFile(fileInput.files[0]);
@@ -335,7 +682,7 @@ function updateVideoToGifEstimate() {
   const estBytes = frames * (w * h * 0.42);
   
   if (videoToGifEstimate) {
-    videoToGifEstimate.textContent = `⚡ Dự kiến: ~${frames} khung hình (${w}×${h}px · ~${formatBytes(estBytes)})`;
+    videoToGifEstimate.textContent = t('videoEstimate', { frames, w, h, size: formatBytes(estBytes) });
   }
 }
 
@@ -434,7 +781,7 @@ originalImg.addEventListener('click', e => {
   if (!eyedropActive) {
     // Thêm điểm seed thủ công kèm theo màu tại vị trí click
     customSeeds.push({x, y, color: [px[0], px[1], px[2]]});
-    showToast('Đã chấm thêm vùng xóa!', 'success');
+    showToast(t('toastSeedAdded'), 'success');
     if (isStaticImage) processStaticImage();
     else processGif();
     return;
@@ -448,7 +795,7 @@ originalImg.addEventListener('click', e => {
   eyedropBtn.classList.remove('active');
   document.body.classList.remove('eyedrop-mode');
   eyedropHint.style.display = 'none';
-  showToast(`Đã chọn màu ${hex}`, 'success');
+  showToast(t('toastColorSelected', { hex }), 'success');
 });
 
 // ─── Load File ────────────────────────────────────────────────────────────────
@@ -516,15 +863,14 @@ function loadFile(file) {
   configureTabsForFile(file.type === 'image/gif' ? 'gif' : 'image');
   if (file.type !== 'image/gif') {
     isStaticImage = true;
-    processBtnText.textContent = 'Xóa nền Ảnh';
+    processBtnText.textContent = t('processBtnTextImg');
     processBtn.disabled = false;
-    animateBtn.disabled = false;
-    downloadBtnText.textContent = 'Tải xuống Ảnh';
+    downloadBtnText.textContent = t('downloadImage');
     loadStaticImage(file, objectUrl);
     return;
   }
 
-  processBtnText.textContent = 'Xóa nền GIF';
+  processBtnText.textContent = t('processBtnTextGif');
   downloadBtnText.textContent = 'Tải xuống GIF';
 
   // Use a hidden <img> for SuperGif to parse
@@ -565,7 +911,7 @@ function loadFile(file) {
   } catch (err) {
     console.error('SuperGif error:', err);
     progressSection.classList.add('hidden');
-    showToast('Lỗi đọc GIF: ' + err.message, 'error');
+    showToast(t('toastErrorGif', { err: err.message }), 'error');
     processBtn.disabled = false;
   }
 }
@@ -587,10 +933,10 @@ function loadStaticImage(file, objectUrl) {
 
     progressSection.classList.add('hidden');
     processBtn.disabled = false;
-    showToast('Đã tải ảnh thành công!', 'success');
+    showToast(t('toastLoadedImage'), 'success');
   };
   img.onerror = () => {
-    showToast('Lỗi đọc ảnh!', 'error');
+    showToast(t('toastErrorImage'), 'error');
     progressSection.classList.add('hidden');
   };
   img.src = objectUrl;
@@ -664,156 +1010,17 @@ async function processStaticImage() {
       
       placeholderResult.style.display = 'none';
       resultImg.classList.remove('hidden');
-      resultMeta.textContent = `Kết quả · ${formatBytes(blob.size)}`;
+      resultMeta.textContent = `${t('previewResult')} · ${formatBytes(blob.size)}`;
       
       progressSection.classList.add('hidden');
       if (successBadgeText) successBadgeText.textContent = 'Xóa nền thành công!';
       downloadBtnText.textContent = 'Tải xuống Ảnh';
       downloadSection.classList.remove('hidden');
       processBtn.disabled = false;
-      showToast('Đã xóa nền xong!', 'success');
+      showToast(t('toastBgRemoved'), 'success');
     }, 'image/png');
   }, 50);
 }
-
-// ─── Animation Generator ──────────────────────────────────────────────────────
-animIntensitySlider.addEventListener('input', e => animIntensityVal.textContent = e.target.value);
-animSpeedSlider.addEventListener('input', e => animSpeedVal.textContent = e.target.value);
-animResetBtn.addEventListener('click', resetAll);
-
-animateBtn.addEventListener('click', async () => {
-  if (!isStaticImage) {
-    showToast('Tính năng Tạo hiệu ứng chỉ hỗ trợ Ảnh tĩnh, không hỗ trợ GIF!', 'error');
-    return;
-  }
-  
-  const effectType = document.querySelector('input[name="effectType"]:checked').value;
-  const intensity = parseInt(animIntensitySlider.value);
-  const speed = parseFloat(animSpeedSlider.value);
-  
-  // Use processed transparent image if available, otherwise original
-  const baseImgSrc = lastStaticProcessedUrl || originalImg.src;
-  
-  const img = new Image();
-  img.src = baseImgSrc;
-  await new Promise(r => img.onload = r);
-  
-  animateBtn.disabled = true;
-  progressSection.classList.remove('hidden');
-  downloadSection.classList.add('hidden');
-  
-  const W = img.naturalWidth;
-  const H = img.naturalHeight;
-  const totalFrames = 24; 
-  const delay = Math.round(100 / speed);
-  
-  // Fetch worker script → Blob URL để tránh CORS
-  let workerBlobUrl = null;
-  try {
-    const resp = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
-    const blob = await resp.blob();
-    workerBlobUrl = URL.createObjectURL(blob);
-  } catch (e) {
-    console.warn('Không tải được worker script:', e);
-  }
-  
-  const gifOpts = {
-    workers: workerBlobUrl ? 4 : 0,
-    quality: 10,
-    width: W,
-    height: H,
-    transparent: 0xFF00FF // magenta = màu key trong suốt
-  };
-  if (workerBlobUrl) gifOpts.workerScript = workerBlobUrl;
-  const gif = new window.GIF(gifOpts);
-  
-  const tmpCanvas = document.createElement('canvas');
-  tmpCanvas.width = W;
-  tmpCanvas.height = H;
-  const ctx = tmpCanvas.getContext('2d');
-  
-  for (let i = 0; i < totalFrames; i++) {
-    updateProgress(Math.round((i / totalFrames) * 50), 'Đang tạo frame...');
-    
-    // Xóa nền hoàn toàn (trong suốt)
-    ctx.clearRect(0, 0, W, H);
-    
-    ctx.save();
-    const t = i / totalFrames;
-    const rad = t * Math.PI * 2;
-    
-    ctx.translate(W / 2, H / 2);
-    
-    if (effectType === 'wobble') {
-       const angle = Math.sin(rad) * (intensity / 100) * 0.3;
-       ctx.rotate(angle);
-    } 
-    else if (effectType === 'pulse') {
-       const scale = 1.0 + Math.sin(rad) * (intensity / 100) * 0.2;
-       ctx.scale(scale, scale);
-    }
-    else if (effectType === 'bounce') {
-       const yOffset = -Math.abs(Math.sin(rad * 0.5)) * (intensity / 100) * (H * 0.3);
-       ctx.translate(0, yOffset);
-    }
-    else if (effectType === 'spin') {
-       ctx.rotate(rad);
-       const fitScale = 0.5 + (1 - (intensity / 100)) * 0.5;
-       ctx.scale(fitScale, fitScale);
-    }
-    else if (effectType === 'float') {
-       const xOff = Math.sin(rad) * (intensity / 100) * (W * 0.15);
-       const yOff = Math.sin(rad * 2) * (intensity / 100) * (H * 0.1);
-       ctx.translate(xOff, yOff);
-    }
-    
-    ctx.drawImage(img, -W / 2, -H / 2, W, H);
-    ctx.restore();
-    
-    // Xử lý alpha 1-bit cho GIF: biến vùng trong suốt thành Magenta
-    const imgData = ctx.getImageData(0, 0, W, H);
-    const data = imgData.data;
-    for (let p = 0; p < data.length; p += 4) {
-       if (data[p + 3] < 128) {
-          // Thay vùng trong suốt bằng màu Magenta
-          data[p] = 255; data[p + 1] = 0; data[p + 2] = 255; data[p + 3] = 255; 
-       } else {
-          // Nếu phần ảnh thật vô tình trùng màu Magenta, ta lệch màu đi 1 xíu để tránh bị đục lỗ
-          if (data[p] === 255 && data[p + 1] === 0 && data[p + 2] === 255) {
-             data[p + 1] = 1;
-          }
-          data[p + 3] = 255; // Đảm bảo pixel thật hoàn toàn đục
-       }
-    }
-    ctx.putImageData(imgData, 0, 0);
-    
-    gif.addFrame(ctx, { copy: true, delay: delay });
-    await sleep(10);
-  }
-  
-  gif.on('progress', p => updateProgress(50 + Math.round(p * 50), 'Đang ghép file GIF...'));
-  
-  gif.on('finished', blob => {
-    if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
-    resultBlobUrl = URL.createObjectURL(blob);
-    
-    resultImg.src = resultBlobUrl;
-    resultImg.classList.remove('hidden');
-    placeholderResult.style.display = 'none';
-    
-    resultMeta.textContent = `GIF Hoạt hình · ${formatBytes(blob.size)}`;
-    updateProgress(100, 'Hoàn tất!');
-    if (successBadgeText) successBadgeText.textContent = 'Tạo GIF chuyển động thành công!';
-    downloadSection.classList.remove('hidden');
-    animateBtn.disabled = false;
-    
-    // Set to false temporarily so the download uses .gif extension
-    // (It will be handled inside downloadResult correctly)
-    downloadBtnText.textContent = 'Tải xuống GIF';
-  });
-  
-  gif.render();
-});
 
 // ─── Image to GIF Feature ───────────────────────────────────────────────────
 
@@ -827,7 +1034,7 @@ animateBtn.addEventListener('click', async () => {
 img2gifDropZone.addEventListener('drop', e => {
   const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
   if (files.length) addImg2gifFiles(files);
-  else showToast('Vui lòng thả file ảnh!', 'error');
+  else showToast(t('toastDropImagesOnly'), 'error');
 });
 img2gifFileInput.addEventListener('change', () => {
   const files = Array.from(img2gifFileInput.files);
@@ -903,12 +1110,12 @@ function renderImg2gifThumbs() {
 img2gifClearBtn.addEventListener('click', () => {
   img2gifImages = [];
   renderImg2gifThumbs();
-  img2gifDropZone.querySelector('p:first-of-type').textContent = 'Kéo thả nhiều ảnh vào đây';
+  img2gifDropZone.querySelector('p:first-of-type').textContent = t('img2gifDropTitle');
 });
 
 img2gifConvertBtn.addEventListener('click', async () => {
   if (img2gifImages.length < 2) {
-    showToast('Vui lòng thêm ít nhất 2 ảnh!', 'error');
+    showToast(t('toastAtLeastTwoImages'), 'error');
     return;
   }
   
@@ -983,11 +1190,11 @@ img2gifConvertBtn.addEventListener('click', async () => {
     
     updateProgress(100, 'Hoàn tất!');
     progressSection.classList.add('hidden');
-    if (successBadgeText) successBadgeText.textContent = 'Tạo GIF thành công!';
+    if (successBadgeText) successBadgeText.textContent = t('successImgToGif');
     downloadSection.classList.remove('hidden');
     downloadBtnText.textContent = 'Tải xuống GIF';
   img2gifConvertBtn.disabled = false;
-  showToast('Tạo GIF thành công! 🎉', 'success');
+  showToast(t('toastGifCreated'), 'success');
   });
   
   gif.on('error', err => {
@@ -995,7 +1202,7 @@ img2gifConvertBtn.addEventListener('click', async () => {
     if (workerBlobUrl) { URL.revokeObjectURL(workerBlobUrl); workerBlobUrl = null; }
     progressSection.classList.add('hidden');
     img2gifConvertBtn.disabled = false;
-    showToast('Lỗi tạo GIF: ' + (err?.message || err), 'error');
+    showToast(t('toastErrorCreateGif', { err: err?.message || err }), 'error');
   });
   
   gif.render();
@@ -1024,7 +1231,7 @@ function setVideoToGifFile(file) {
   currentFile = file;
   videoToGifUrl = URL.createObjectURL(file);
   videoPlayer.src = videoToGifUrl;
-  videoToGifFileName.textContent = `${file.name} · đang đọc video...`;
+  videoToGifFileName.textContent = `${file.name} · ${t('readingVideo')}`;
   videoToGifConvertBtn.disabled = true;
   videoPlayer.onloadedmetadata = () => {
     videoToGifFileName.textContent = `${file.name} · ${videoPlayer.videoWidth}×${videoPlayer.videoHeight} · ${videoPlayer.duration.toFixed(1)} giây`;
@@ -1037,7 +1244,7 @@ function setVideoToGifFile(file) {
     videoToGifConvertBtn.disabled = false;
     updateMuteTab();
     updateVideoToGifEstimate();
-    showToast('Đã tải video thành công!', 'success');
+    showToast(t('toastLoadedVideo'), 'success');
   };
   videoPlayer.onerror = () => {
     videoToGifFileName.textContent = 'Không thể đọc video này';
@@ -1063,7 +1270,7 @@ function seekVideo(time) {
 
 videoToGifConvertBtn.addEventListener('click', async () => {
   if (!videoToGifFile || !Number.isFinite(videoPlayer.duration)) {
-    showToast('Hãy chọn video trước!', 'error');
+    showToast(t('toastSelectVideoFirst'), 'error');
     return;
   }
   const fps = Number(videoToGifFps.value) || 10;
@@ -1084,7 +1291,7 @@ videoToGifConvertBtn.addEventListener('click', async () => {
 
   const duration = Math.max(0.1, endTime - startTime);
   const frameCount = Math.ceil(duration * fps);
-  if (frameCount > 1200 && !confirm(`Video này sẽ tạo ${frameCount} khung hình và có thể mất nhiều thời gian. Bạn vẫn muốn tiếp tục?`)) return;
+  if (frameCount > 1200 && !confirm(t('confirmManyFrames', { count: frameCount }))) return;
 
   const sizeChoice = document.querySelector('input[name="videoToGifSize"]:checked')?.value || '0.5';
   let scale = 0.5;
@@ -1128,7 +1335,7 @@ videoToGifConvertBtn.addEventListener('click', async () => {
       progressSection.classList.add('hidden');
       videoToGifConvertBtn.disabled = false;
       if (workerUrl) URL.revokeObjectURL(workerUrl);
-      showToast('Chuyển video sang GIF thành công! 🎉', 'success');
+      showToast(t('toastVideoToGifSuccess'), 'success');
     });
     gif.on('error', err => { throw err; });
     gif.render();
@@ -1137,7 +1344,7 @@ videoToGifConvertBtn.addEventListener('click', async () => {
     progressSection.classList.add('hidden');
     videoToGifConvertBtn.disabled = false;
     if (workerUrl) URL.revokeObjectURL(workerUrl);
-    showToast('Lỗi chuyển video: ' + (err.message || err), 'error');
+    showToast(t('toastVideoToGifError', { err: err.message || err }), 'error');
   }
 });
 
@@ -1158,7 +1365,7 @@ muteChooseAnotherBtn.addEventListener('click', resetAll);
 function updateMuteTab() {
   if (videoToGifFile && Number.isFinite(videoPlayer.duration) && videoPlayer.duration > 0) {
     muteVideoBtn.disabled = false;
-    muteVideoFileName.textContent = `${videoToGifFile.name} · ${formatBytes(videoToGifFile.size)} · ${videoPlayer.videoWidth}×${videoPlayer.videoHeight} · ${videoPlayer.duration.toFixed(1)} giây`;
+    muteVideoFileName.textContent = `${videoToGifFile.name} · ${formatBytes(videoToGifFile.size)} · ${videoPlayer.videoWidth}×${videoPlayer.videoHeight} · ${videoPlayer.duration.toFixed(1)} ${t('secondsUnit')}`;
     muteVideoStatus.textContent = '';
   } else {
     muteVideoBtn.disabled = true;
@@ -1259,12 +1466,12 @@ muteVideoBtn.addEventListener('click', async () => {
     downloadSection.classList.remove('hidden');
     downloadSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-    showToast('Xóa âm thanh thành công! 🎉', 'success');
+    showToast(t('toastMuteSuccess'), 'success');
 
   } catch (err) {
     console.error('[MuteVideo]', err);
     progressSection.classList.add('hidden');
-    showToast('Lỗi xóa âm thanh: ' + (err.message || err), 'error');
+    showToast(t('toastMuteError', { err: err.message || err }), 'error');
   } finally {
     muteVideoBtn.disabled = false;
   }
@@ -1412,7 +1619,7 @@ async function processGif() {
     const scaleInfo = outScale < 1 ? ` · ${Math.round(outScale * 100)}% kích thước` : '';
     resultMeta.textContent = `${formatBytes(blob.size)} · ${outputFrameCount} frames${scaleInfo}`;
     if (blob.size > 1_000_000) {
-      showToast(`GIF lớn hơn 1MB (${formatBytes(blob.size)}). Tăng mức Nén để giảm tiếp!`, 'info');
+      showToast(t('toastGifLargeWarning', { size: formatBytes(blob.size) }), 'info');
     }
 
     updateProgress(100, 'Hoàn tất!');
@@ -1429,7 +1636,7 @@ async function processGif() {
     if (workerBlobUrl) { URL.revokeObjectURL(workerBlobUrl); workerBlobUrl = null; }
     progressSection.classList.add('hidden');
     processBtn.disabled = false;
-    showToast('Lỗi encode GIF: ' + (err?.message || err), 'error');
+    showToast(t('toastGifEncodeError', { err: err?.message || err }), 'error');
   });
 
   gif.render();
@@ -1575,7 +1782,7 @@ function initGifFrames() {
 function renderFilmstrip() {
   if (!frameFilmstrip) return;
   frameFilmstrip.innerHTML = '';
-  if (frameFilmstripCount) frameFilmstripCount.textContent = `${gifFrames.length} khung hình`;
+  if (frameFilmstripCount) frameFilmstripCount.textContent = `${gifFrames.length} ${t('framesCount')}`;
 
   gifFrames.forEach((frame, idx) => {
     const item = document.createElement('div');
@@ -1653,7 +1860,7 @@ function applyCanvasZoom() {
       zoomNumeric = appliedScale;
       frameEditorCanvas.style.width = Math.round(W * appliedScale) + 'px';
       frameEditorCanvas.style.height = Math.round(H * appliedScale) + 'px';
-      if (frameZoomVal) frameZoomVal.textContent = `${Math.round(appliedScale * 100)}% (Fit)`;
+      if (frameZoomVal) frameZoomVal.textContent = `${Math.round(appliedScale * 100)}% (${t('frameZoomFit')})`;
     }
   } else {
     const scale = typeof currentZoom === 'number' ? currentZoom : parseFloat(currentZoom) || 1;
@@ -1958,13 +2165,13 @@ if (frameUndoBtn) {
   frameUndoBtn.addEventListener('click', () => {
     const frame = gifFrames[activeFrameIndex];
     if (!frame || !frame.history || frame.history.length === 0) {
-      showToast('Chưa có thao tác nào để hoàn tác trên frame này!', 'info');
+      showToast(t('toastNoUndo'), 'info');
       return;
     }
     frame.currentImageData = frame.history.pop();
     drawActiveFrame();
     updateThumbnail(activeFrameIndex);
-    showToast('Đã hoàn tác frame này!', 'success');
+    showToast(t('toastUndid'), 'success');
   });
 }
 
@@ -1976,14 +2183,14 @@ if (frameResetBtn) {
     frame.currentImageData = copyImageData(frame.initialImageData);
     drawActiveFrame();
     updateThumbnail(activeFrameIndex);
-    showToast('Đã khôi phục frame này về ban đầu!', 'info');
+    showToast(t('toastFrameReset'), 'info');
   });
 }
 
 if (frameApplyAllBtn) {
   frameApplyAllBtn.addEventListener('click', () => {
     if (!lastWandPoint) {
-      showToast('Hãy click xóa một điểm trên frame trước, rồi mới bấm Áp dụng cho mọi Frame!', 'error');
+      showToast(t('toastClickPointFirst'), 'error');
       return;
     }
     const tol = parseInt(frameTolerance.value) || 30;
@@ -1998,7 +2205,7 @@ if (frameApplyAllBtn) {
     });
 
     drawActiveFrame();
-    showToast(`Đã áp dụng xóa vùng tại (${x}, ${y}) trên toàn bộ ${gifFrames.length} frame! 🎉`, 'success');
+    showToast(t('toastApplyAllSuccess', { x, y, count: gifFrames.length }), 'success');
   });
 }
 
@@ -2021,7 +2228,7 @@ window.addEventListener('keydown', e => {
 
 async function exportEditedGif() {
   if (!gifFrames || gifFrames.length === 0) {
-    showToast('Chưa có frame nào để xuất!', 'error');
+    showToast(t('toastNoFramesToExport'), 'error');
     return;
   }
 
@@ -2115,12 +2322,12 @@ async function exportEditedGif() {
 
       updateProgress(100, 'Hoàn tất!');
       progressSection.classList.add('hidden');
-      if (successBadgeText) successBadgeText.textContent = 'Đã cập nhật GIF thành công!';
-      downloadBtnText.textContent = 'Tải xuống GIF đã sửa';
+      if (successBadgeText) successBadgeText.textContent = t('successFrameExport');
+      downloadBtnText.textContent = t('downloadEditedGif');
       downloadSection.classList.remove('hidden');
       downloadSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       frameEditorExportBtn.disabled = false;
-      showToast('Xuất GIF từ các frame đã sửa thành công! 🎉', 'success');
+      showToast(t('toastExportSuccess'), 'success');
     });
 
     gif.on('error', err => { throw err; });
@@ -2130,7 +2337,7 @@ async function exportEditedGif() {
     console.error(err);
     progressSection.classList.add('hidden');
     frameEditorExportBtn.disabled = false;
-    showToast('Lỗi xuất GIF: ' + (err.message || err), 'error');
+    showToast(t('toastExportError', { err: err.message || err }), 'error');
   }
 }
 
@@ -2768,3 +2975,6 @@ aiGenerateBtn.addEventListener('click', async () => {
 
   requestAnimationFrame(render);
 })();
+
+// Initialize default language
+setLanguage(currentLang);
