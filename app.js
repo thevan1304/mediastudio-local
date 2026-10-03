@@ -39,7 +39,6 @@ const speedVal          = document.getElementById('speedVal');
 const compressSlider    = document.getElementById('compressSlider');
 const compressVal       = document.getElementById('compressVal');
 const compressHint      = document.getElementById('compressHint');
-const removeIslandsCheck= document.getElementById('removeIslands');
 const processBtn        = document.getElementById('processBtn');
 const resetBtn          = document.getElementById('resetBtn');
 const downloadBtn       = document.getElementById('downloadBtn');
@@ -167,7 +166,7 @@ const I18N = {
   en: {
     heroTitle: 'All-in-One Image, GIF & Video Processing',
     heroSub: 'Background Removal \xB7 Frame-by-frame Editor \xB7 Video to GIF \xB7 Mute Video \xB7 100% Local',
-    tabBgRemove: 'Remove Background', tabFrameEditor: 'Frame Editor', tabAnimate: 'Animate Effect',
+    tabBgRemove: 'Remove Background', tabFrameEditor: 'Frame Editor',
     tabImgToGif: 'Images to GIF', tabVideoToGif: 'Video to GIF', tabMuteVideo: 'Mute Video',
     dropTitle: 'Drag & drop image, GIF, or video here', dropSub: 'or',
     browseBtn: 'Choose Image / GIF / Video',
@@ -176,7 +175,6 @@ const I18N = {
     originalWrapTitle: 'Click on trapped background area to remove',
     manualSeedHintText: 'Click on enclosed background areas to remove manually',
     placeholderBgRemove: 'Click <strong>Remove Background</strong> to see result',
-    placeholderAnimate: 'Click <strong>Generate Animated GIF</strong> to see result',
     placeholderImgToGif: 'Click <strong>Create GIF</strong> to see result',
     placeholderVideoToGif: 'Click <strong>Convert Video to GIF</strong> to see result',
     placeholderMuteVideo: 'Click <strong>Mute Video</strong> to see result',
@@ -185,8 +183,6 @@ const I18N = {
     eyedropHint: 'Click on original image to pick background color',
     toleranceLabel: 'Tolerance:', tolerancePrecise: 'Precise', toleranceWider: 'Wider',
     featherLabel: 'Feather edge:', featherSharp: 'Sharp', featherSmooth: 'Smooth',
-    removeIslandsLabel: 'Remove enclosed gaps (holes)',
-    removeIslandsHint: 'Careful: may remove details inside the subject (eyes, hands, text...)',
     speedLabel: 'GIF Speed:', speedSlow: 'Slow', speedFast: 'Fast',
     compressLabel: 'Compress GIF:', compressHighQuality: 'High Quality', compressSmallSize: 'Small Size',
     compressHint: '100% size \xB7 Maximum quality (recommended for white/solid backgrounds)',
@@ -202,7 +198,6 @@ const I18N = {
     animEffectLabel: 'Effect',
     effectWobble: 'Wobble', effectPulse: 'Pulse', effectBounce: 'Bounce', effectSpin: 'Spin', effectFloat: 'Float',
     animIntensityLabel: 'Intensity:', animIntensityMild: 'Mild', animIntensityStrong: 'Strong',
-    animSpeedLabel: 'Speed:', animBtnText: 'Generate Animated GIF',
     img2gifModeOriginal: '📷 From Original Image',
     img2gifModeMulti: '🖼️ Add Multiple Images',
     img2gifNoOriginalHint: 'No image loaded. Please load a static image (PNG / JPG) first.',
@@ -245,7 +240,7 @@ const I18N = {
     frameFilmstripTitle: 'Frames timeline (Click frame to edit):',
     frameExportBtn: 'Re-create GIF from Edited Frames',
     progressLabelDefault: 'Processing frames...',
-    successBgRemoved: 'Background removed successfully!', successAnimated: 'Animated GIF generated!',
+    successBgRemoved: 'Background removed successfully!',
     successImgToGif: 'GIF created successfully!', successVideoToGif: 'Video converted to GIF!',
     successMuted: 'Audio removed successfully!', successFrameExport: 'GIF updated successfully!',
     downloadResult: 'Download Result', downloadImage: 'Download Image', downloadGif: 'Download GIF',
@@ -261,7 +256,6 @@ const I18N = {
     toastLoadedFrames: 'Loaded {count} frames!', toastErrorGif: 'Error reading GIF: {err}',
     toastLoadedImage: 'Image loaded successfully!', toastErrorImage: 'Error reading image!',
     toastBgRemoved: 'Background removed successfully! \uD83C\uDF89',
-    toastAnimateStaticOnly: 'Animate effect only supports static images, not GIFs!',
     toastDropImagesOnly: 'Please drop image files!',
     toastAtLeastOneImage: 'Please load a static image first!', toastAtLeastOneImage: 'Please load a static image first!', toastAtLeastTwoImages: 'Please add at least 2 images!',
     toastGifCreated: 'GIF created successfully! \uD83C\uDF89',
@@ -293,7 +287,7 @@ const I18N = {
   vi: {
     heroTitle: 'X\u1EED l\xFD \u1EA2nh, GIF & Video \u0111a n\u0103ng tr\xEAn tr\xECnh duy\u1EC7t',
     heroSub: 'X\xF3a n\u1EC1n \xB7 S\u1EEDa t\u1EEDng frame \xB7 Video sang GIF \xB7 T\u1EAFt ti\u1EBFng video \xB7 100% Local',
-    tabBgRemove: 'X\xF3a n\u1EC1n', tabFrameEditor: 'S\u1EEDa t\u1EEDng Frame', tabAnimate: 'T\u1EA1o hi\u1EC7u \u1EE9ng (Animate)',
+    tabBgRemove: 'X\xF3a n\u1EC1n', tabFrameEditor: 'S\u1EEDa t\u1EEDng Frame',
     tabImgToGif: '\u1EA2nh sang GIF', tabVideoToGif: 'Video sang GIF', tabMuteVideo: 'X\xF3a \xE2m thanh',
     dropTitle: 'K\xE9o th\u1EA3 file \u1EA3nh, GIF ho\u1EB7c video v\xE0o \u0111\xE2y', dropSub: 'ho\u1EB7c',
     browseBtn: 'Ch\u1ECDn file \u1EA2nh/GIF/Video',
@@ -302,7 +296,6 @@ const I18N = {
     originalWrapTitle: 'Click v\xE0o v\xF9ng n\u1EC1n b\u1ECB k\u1EB9t \u0111\u1EC3 x\xF3a',
     manualSeedHintText: 'Click v\xE0o v\xF9ng n\u1EC1n l\u1ECDt th\u1ECDm \u0111\u1EC3 x\xF3a th\u1EE7 c\xF4ng',
     placeholderBgRemove: 'Nh\u1EA5n <strong>X\xF3a n\u1EC1n</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
-    placeholderAnimate: 'Nh\u1EA5n <strong>T\u1EA1o GIF chuy\u1EC3n \u0111\u1ED9ng</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
     placeholderImgToGif: 'Nh\u1EA5n <strong>Chuy\u1EC3n sang GIF</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
     placeholderVideoToGif: 'Nh\u1EA5n <strong>Chuy\u1EC3n video sang GIF</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
     placeholderMuteVideo: 'Nh\u1EA5n <strong>X\xF3a \xE2m thanh</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
@@ -311,8 +304,6 @@ const I18N = {
     eyedropHint: 'Nh\u1EA5p v\xE0o \u1EA3nh g\u1ED1c \u0111\u1EC3 ch\u1ECDn m\xE0u n\u1EC1n',
     toleranceLabel: '\u0110\u1ED9 nh\u1EA1y:', tolerancePrecise: 'Ch\xEDnh x\xE1c', toleranceWider: 'R\u1ED9ng h\u01A1n',
     featherLabel: 'L\xE0m m\u1EC1m vi\u1EC1n:', featherSharp: 'S\u1EAFc n\xE9t', featherSmooth: 'M\u1EC1m m\u1EA1i',
-    removeIslandsLabel: 'X\xF3a n\u1EC1n l\u1ECDt th\u1ECDm (l\u1ED7 h\u1ED5ng)',
-    removeIslandsHint: 'C\u1EA9n th\u1EADn: c\xF3 th\u1EC3 x\xF3a nh\u1EA7m chi ti\u1EBFt b\xEAn trong \u0111\u1ED1i t\u01B0\u1EE3ng (m\u1EAFt, tay, ch\u1EEF...)',
     speedLabel: 'T\u1ED1c \u0111\u1ED9 GIF:', speedSlow: 'Ch\u1EADm', speedFast: 'Nhanh',
     compressLabel: 'N\xE9n GIF:', compressHighQuality: 'Ch\u1EA5t l\u01B0\u1EE3ng cao', compressSmallSize: 'Dung l\u01B0\u1EE3ng nh\u1ECF',
     compressHint: '100% k\xEDch th\u01B0\u1EDBc \xB7 Ch\u1EA5t l\u01B0\u1EE3ng t\u1ED1i \u0111a (khuy\u1EBFn ngh\u1ECB cho n\u1EC1n tr\u1EAFng/\u0111\u01A1n m\xE0u)',
@@ -328,7 +319,6 @@ const I18N = {
     animEffectLabel: 'Hi\u1EC7u \u1EE9ng (Effect)',
     effectWobble: 'L\u1EAFc l\u01B0', effectPulse: 'Nh\u1ECBp tim', effectBounce: 'N\u1EA3y l\xEAn', effectSpin: 'Xoay tr\xF2n', effectFloat: 'Bay b\u1ED5ng',
     animIntensityLabel: 'Bi\xEAn \u0111\u1ED9 (Intensity):', animIntensityMild: 'Nh\u1EB9', animIntensityStrong: 'M\u1EA1nh',
-    animSpeedLabel: 'T\u1ED1c \u0111\u1ED9 (Speed):', animBtnText: 'T\u1EA1o GIF chuy\u1EC3n \u0111\u1ED9ng',
     img2gifDropTitle: 'K\xE9o th\u1EA3 nhi\u1EC1u \u1EA3nh v\xE0o \u0111\xE2y',
     img2gifDropSub: 'H\u1ED7 tr\u1EE3 PNG, JPG, JPEG, WEBP, BMP...',
     img2gifBrowseBtn: 'Ch\u1ECDn \u1EA3nh', img2gifDelayLabel: 'T\u1ED1c \u0111\u1ED9 m\u1ED7i \u1EA3nh:', img2gifSizeLabel: 'K\xEDch th\u01B0\u1EDBc xu\u1EA5t',
@@ -361,7 +351,7 @@ const I18N = {
     frameFilmstripTitle: 'Danh s\xE1ch c\xE1c khung h\xECnh (Click frame \u0111\u1EC3 s\u1EEDa):',
     frameExportBtn: 'T\u1EA1o l\u1EA1i GIF t\u1EEB c\xE1c Frame \u0111\xE3 s\u1EEDa',
     progressLabelDefault: '\u0110ang x\u1EED l\xFD frame...',
-    successBgRemoved: 'X\xF3a n\u1EC1n th\xE0nh c\xF4ng!', successAnimated: 'T\u1EA1o GIF chuy\u1EC3n \u0111\u1ED9ng th\xE0nh c\xF4ng!',
+    successBgRemoved: 'X\xF3a n\u1EC1n th\xE0nh c\xF4ng!',
     successImgToGif: 'T\u1EA1o GIF th\xE0nh c\xF4ng!', successVideoToGif: 'Chuy\u1EC3n video sang GIF th\xE0nh c\xF4ng!',
     successMuted: 'X\xF3a \xE2m thanh th\xE0nh c\xF4ng!', successFrameExport: '\u0110\xE3 c\u1EADp nh\u1EADt GIF th\xE0nh c\xF4ng!',
     downloadResult: 'T\u1EA3i xu\u1ED1ng k\u1EBFt qu\u1EA3', downloadImage: 'T\u1EA3i xu\u1ED1ng \u1EA2nh', downloadGif: 'T\u1EA3i xu\u1ED1ng GIF',
@@ -377,7 +367,6 @@ const I18N = {
     toastLoadedFrames: '\u0110\xE3 t\u1EA3i {count} frames!', toastErrorGif: 'L\u1ED7i \u0111\u1ECDc GIF: {err}',
     toastLoadedImage: '\u0110\xE3 t\u1EA3i \u1EA3nh th\xE0nh c\xF4ng!', toastErrorImage: 'L\u1ED7i \u0111\u1ECDc \u1EA3nh!',
     toastBgRemoved: '\u0110\xE3 x\xF3a n\u1EC1n xong! \uD83C\uDF89',
-    toastAnimateStaticOnly: 'T\xEDnh n\u0103ng T\u1EA1o hi\u1EC7u \u1EE9ng ch\u1EC9 h\u1ED7 tr\u1EE3 \u1EA2nh t\u0129nh, kh\xF4ng h\u1ED7 tr\u1EE3 GIF!',
     toastDropImagesOnly: 'Vui l\xF2ng th\u1EA3 file \u1EA3nh!',
     toastAtLeastTwoImages: 'Vui l\xF2ng th\xEAm \xEDt nh\u1EA5t 2 \u1EA3nh!',
     toastGifCreated: 'T\u1EA1o GIF th\xE0nh c\xF4ng! \uD83C\uDF89',
@@ -1054,8 +1043,7 @@ async function processStaticImage() {
   const tolerance = parseInt(toleranceSlider.value);
   const feather   = parseInt(featherSlider.value);
   const [r0, g0, b0] = hexToRgb(bgColorInput.value);
-  const removeIslands = removeIslandsCheck.checked;
-
+  
   processBtn.disabled = true;
   downloadSection.classList.add('hidden');
   progressSection.classList.remove('hidden');
@@ -1073,7 +1061,7 @@ async function processStaticImage() {
     ctx.drawImage(staticImgObj, 0, 0);
     const imgData = ctx.getImageData(0, 0, W, H);
     
-    removeBackground(imgData.data, r0, g0, b0, tolerance, feather, W, H, removeIslands, customSeeds);
+    removeBackground(imgData.data, r0, g0, b0, tolerance, feather, W, H, customSeeds);
     
     ctx.putImageData(imgData, 0, 0);
     
@@ -1614,8 +1602,7 @@ async function processGif() {
   const feather   = parseInt(featherSlider.value);
   const speed     = parseFloat(speedSlider.value);
   const [r0, g0, b0] = hexToRgb(bgColorInput.value);
-  const removeIslands = removeIslandsCheck.checked;
-
+  
   // ── Compression preset ─────────────────────────────────────────────────────
   // scale    : resize output canvas before encoding
   // quality  : gif.js colour-quantisation quality (1 = best, 25 = fastest/smallest)
@@ -1675,7 +1662,7 @@ async function processGif() {
 
     // Get pixel data and remove background
     const imgData = tmpCtx.getImageData(0, 0, W, H);
-    removeBackground(imgData.data, r0, g0, b0, tolerance, feather, W, H, removeIslands, customSeeds);
+    removeBackground(imgData.data, r0, g0, b0, tolerance, feather, W, H, customSeeds);
 
     const delay = Math.max(20, Math.round((frameDelays[i] || 100) / speed));
     processedFrames.push({ imgData, delay });
@@ -1877,8 +1864,7 @@ function initGifFrames() {
   const tolerance = parseInt(toleranceSlider.value);
   const feather   = parseInt(featherSlider.value);
   const [r0, g0, b0] = hexToRgb(bgColorInput.value);
-  const removeIslands = removeIslandsCheck.checked;
-
+  
   for (let i = 0; i < frameCount; i++) {
     let imgData;
     if (lastProcessedFrames && lastProcessedFrames[i]) {
@@ -1889,7 +1875,7 @@ function initGifFrames() {
       tmpCtx.clearRect(0, 0, W, H);
       tmpCtx.drawImage(src, 0, 0);
       imgData = tmpCtx.getImageData(0, 0, W, H);
-      removeBackground(imgData.data, r0, g0, b0, tolerance, feather, W, H, removeIslands, customSeeds);
+      removeBackground(imgData.data, r0, g0, b0, tolerance, feather, W, H, customSeeds);
     }
 
     const delay = frameDelays[i] || 100;
@@ -2564,7 +2550,7 @@ if (frameEditorExportBtn) {
 // ─── Background Removal Algorithm v2 ──────────────────────────────────────────
 // Flood-fill từ viền ảnh với khoảng cách màu Redmean (perceptual).
 // Viền được làm mượt bằng Gaussian blur thay vì box blur.
-function removeBackground(data, r0, g0, b0, tolerance, feather, w, h, doRemoveIslands, seeds = []) {
+function removeBackground(data, r0, g0, b0, tolerance, feather, w, h, seeds = []) {
   // Redmean range ≈ 9 × 255² = 585 225. Map slider (0-128) đến cùng tỉ lệ.
   const tol2 = tolerance * tolerance * 9;
   const n    = w * h;
@@ -2628,37 +2614,6 @@ function removeBackground(data, r0, g0, b0, tolerance, feather, w, h, doRemoveIs
       if (x < w - 1 && y > 0)     enqM(x + 1, y - 1);
       if (x > 0     && y < h - 1) enqM(x - 1, y + 1);
       if (x < w - 1 && y < h - 1) enqM(x + 1, y + 1);
-    }
-  }
-
-  // ── Island removal: xóa "đảo nền" lọt thỏm bên trong vật thể ─────────────
-  if (doRemoveIslands) {
-    const MAX_ISLAND = Math.max(80, Math.floor(n * 0.02));
-    const iVis = new Uint8Array(n);
-    for (let start = 0; start < n; start++) {
-      if (mask[start] || iVis[start]) continue;
-      const comp = [], iQ = [start];
-      iVis[start] = 1;
-      let touchesBound = false, overflow = false;
-      while (iQ.length) {
-        const ci = iQ.pop(); comp.push(ci);
-        const cx = ci % w, cy = (ci / w) | 0;
-        if (cx === 0 || cx === w - 1 || cy === 0 || cy === h - 1) touchesBound = true;
-        const chk = ni => { if (!mask[ni] && !iVis[ni]) { iVis[ni] = 1; iQ.push(ni); } };
-        if (cx > 0)     chk(ci - 1);
-        if (cx < w - 1) chk(ci + 1);
-        if (cy > 0)     chk(ci - w);
-        if (cy < h - 1) chk(ci + w);
-        if (comp.length > MAX_ISLAND) { overflow = true; break; }
-      }
-      if (!overflow && !touchesBound) {
-        let bgCount = 0;
-        for (const ci of comp) {
-          const b = ci * 4;
-          if (colorDistance2(data[b], data[b + 1], data[b + 2], r0, g0, b0) <= tol2 * 3) bgCount++;
-        }
-        if (bgCount / comp.length >= 0.5) for (const ci of comp) mask[ci] = 255;
-      }
     }
   }
 
@@ -2835,10 +2790,7 @@ function downloadResult() {
     const baseName = currentFile ? currentFile.name.replace(/\.[^/.]+$/, '') : 'result';
     a.download = baseName + '.gif';
   }
-  else if (currentTab === 'animate') {
-    const baseName = currentFile ? currentFile.name.replace(/\.[^/.]+$/, '') : 'result';
-    a.download = baseName + '_animated.gif';
-  }
+
   else if (isStaticImage) {
     const baseName = currentFile ? currentFile.name.replace(/\.[^/.]+$/, '') : 'result';
     a.download = baseName + '_no_bg.png';
@@ -2894,196 +2846,7 @@ function showToast(msg, type = 'info') {
   });
 }
 
-/* ComfyUI video-generation integration removed. Video-to-GIF conversion runs locally. 
-const COMFY_URL = "http://127.0.0.1:8188";
 
-async function checkComfyUI() {
-  try {
-    const res = await fetch(`${COMFY_URL}/system_stats`, { method: 'GET' });
-    if (res.ok) {
-      comfyStatus.textContent = '🟢 Sẵn sàng';
-      comfyStatus.style.color = '#10b981';
-      aiGenerateBtn.disabled = false;
-    } else {
-      throw new Error('Not ok');
-    }
-  } catch (e) {
-    comfyStatus.textContent = '🔴 Mất kết nối';
-    comfyStatus.style.color = '#ef4444';
-    aiGenerateBtn.disabled = true;
-  }
-}
-
-async function uploadImageToComfy(blob, filename) {
-  const formData = new FormData();
-  formData.append('image', blob, filename);
-  formData.append('overwrite', 'true');
-  formData.append('type', 'input');
-  
-  const res = await fetch(`${COMFY_URL}/upload/image`, {
-    method: 'POST',
-    body: formData
-  });
-  if (!res.ok) throw new Error('Upload ảnh thất bại');
-  const data = await res.json();
-  return data.name;
-}
-
-async function queueComfyPrompt(workflow) {
-  const clientId = Math.random().toString(36).substring(2, 15);
-  const res = await fetch(`${COMFY_URL}/prompt`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt: workflow, client_id: clientId })
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error('Queue prompt thất bại: ' + err);
-  }
-  const data = await res.json();
-  if (data.error) throw new Error(JSON.stringify(data.error));
-  return data.prompt_id;
-}
-
-async function waitComfyCompletion(promptId, timeoutSeconds) {
-  const deadline = Date.now() + timeoutSeconds * 1000;
-  while (Date.now() < deadline) {
-    const res = await fetch(`${COMFY_URL}/history/${promptId}`);
-    if (res.ok) {
-      const history = await res.json();
-      if (history[promptId]) {
-        const result = history[promptId];
-        if (result.status && result.status.status_str === "error") {
-          throw new Error('ComfyUI báo lỗi trong lúc tạo video!');
-        }
-        return result;
-      }
-    }
-    // Chờ 2 giây rồi ping lại
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
-  throw new Error('Quá thời gian chờ ComfyUI xử lý!');
-}
-
-async function downloadComfyVideo(filename, type = "output", subfolder = "") {
-  const params = new URLSearchParams({ filename, type, subfolder });
-  const res = await fetch(`${COMFY_URL}/view?${params.toString()}`);
-  if (!res.ok) throw new Error('Không tải được video từ ComfyUI');
-  return await res.blob();
-}
-
-function setNodeInput(workflow, nodeId, inputName, value) {
-  if (!nodeId) return;
-  const node = workflow[String(nodeId)];
-  if (!node) throw new Error(`Không tìm thấy node ID ${nodeId}`);
-  if (!node.inputs) node.inputs = {};
-  node.inputs[inputName] = value;
-}
-
-aiGenerateBtn.addEventListener('click', async () => {
-  if (!isStaticImage && !lastStaticProcessedUrl) {
-    showToast('Hãy tải lên một bức ảnh trước!', 'error');
-    return;
-  }
-  
-  // Đọc file config.json và workflow_api.json
-  let config, baseWorkflow;
-  try {
-    const [cfgRes, wfRes] = await Promise.all([
-      fetch('config.json'),
-      fetch('workflow_api.json')
-    ]);
-    if (!cfgRes.ok || !wfRes.ok) throw new Error('Thiếu file config.json hoặc workflow_api.json');
-    config = await cfgRes.json();
-    baseWorkflow = await wfRes.json();
-  } catch (e) {
-    showToast('Lỗi đọc cấu hình: ' + e.message, 'error');
-    return;
-  }
-  
-  aiGenerateBtn.disabled = true;
-  progressSection.classList.remove('hidden');
-  downloadSection.classList.add('hidden');
-  
-  try {
-    updateProgress(5, 'Đang chuẩn bị ảnh...');
-    
-    // Lấy ảnh hiện tại từ resultImg (nếu đã xóa nền) hoặc originalImg
-    const sourceImg = resultImg.src.startsWith('blob:') && !resultImg.classList.contains('hidden') ? resultImg : originalImg;
-    const imgRes = await fetch(sourceImg.src);
-    const imgBlob = await imgRes.blob();
-    
-    updateProgress(10, 'Đang tải ảnh lên ComfyUI...');
-    const uploadedName = await uploadImageToComfy(imgBlob, 'gif_eraser_input.png');
-    
-    // Chuẩn bị workflow
-    updateProgress(20, 'Đang gửi lệnh Prompt...');
-    const workflow = JSON.parse(JSON.stringify(baseWorkflow));
-    const nodes = config.nodes;
-    
-    let seedValue = parseInt(aiSeed.value);
-    if (seedValue === -1) seedValue = Math.floor(Math.random() * 2147483647);
-    
-    setNodeInput(workflow, nodes.image.id, nodes.image.input || "image", uploadedName);
-    setNodeInput(workflow, nodes.prompt.id, nodes.prompt.input || "text", aiPrompt.value);
-    setNodeInput(workflow, nodes.seed.id, nodes.seed.input || "seed", seedValue);
-    
-    if (nodes.negative_prompt && nodes.negative_prompt.id) {
-      setNodeInput(workflow, nodes.negative_prompt.id, nodes.negative_prompt.input || "text", aiNegativePrompt.value);
-    }
-    if (nodes.frames && nodes.frames.id) {
-      setNodeInput(workflow, nodes.frames.id, nodes.frames.input || "length", parseInt(aiFrames.value));
-    }
-    if (nodes.output_prefix && nodes.output_prefix.id) {
-      setNodeInput(workflow, nodes.output_prefix.id, nodes.output_prefix.input || "filename_prefix", "giferaser/" + Math.random().toString(36).substring(7));
-    }
-    
-    // Xếp hàng đợi
-    const promptId = await queueComfyPrompt(workflow);
-    
-    // Chờ kết quả
-    updateProgress(30, 'ComfyUI đang chạy AI (có thể mất vài phút)...');
-    const historyResult = await waitComfyCompletion(promptId, config.timeout_seconds || 3600);
-    
-    updateProgress(90, 'Đang lấy kết quả...');
-    // Tìm output filename
-    let foundVideoInfo = null;
-    const outputs = historyResult.outputs || {};
-    for (const nodeOutput of Object.values(outputs)) {
-      const candidates = [...(nodeOutput.videos || []), ...(nodeOutput.gifs || []), ...(nodeOutput.images || [])];
-      if (candidates.length > 0) {
-        // Ưu tiên file mp4
-        const video = candidates.find(f => f.filename.endsWith('.mp4')) || candidates[0];
-        foundVideoInfo = video;
-        break;
-      }
-    }
-    
-    if (!foundVideoInfo) {
-      throw new Error('ComfyUI chạy xong nhưng không tìm thấy file output nào.');
-    }
-    
-    const videoBlob = await downloadComfyVideo(foundVideoInfo.filename, foundVideoInfo.type, foundVideoInfo.subfolder);
-    
-    // Chuyển video thẳng vào Video tab
-    const videoFile = new File([videoBlob], foundVideoInfo.filename, { type: 'video/mp4' });
-    loadFile(videoFile); // Hàm loadFile sẽ tự động switch sang Video Tab
-    
-    updateProgress(100, 'Tạo Video AI thành công!');
-    showToast('Video đã được tạo. Bạn có thể Convert sang GIF ngay!', 'success');
-    
-  } catch (err) {
-    console.error(err);
-    showToast(err.message, 'error');
-  } finally {
-    aiGenerateBtn.disabled = false;
-    setTimeout(() => {
-      progressSection.classList.add('hidden');
-    }, 5000);
-  }
-});
-
-*/
 // ─── Dynamic Interactive Canvas Scene ─────────────────────────────────────────
 (function initDynamicBackground() {
   const canvas = document.getElementById('bgCanvas');
