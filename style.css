@@ -1080,6 +1080,86 @@ body.eyedrop-mode #originalImg {
   cursor: crosshair;
 }
 
+
+/* img2gif mode tabs */
+.img2gif-mode-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+.img2gif-mode-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border-radius: calc(var(--radius-md) - 3px);
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.img2gif-mode-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+.img2gif-mode-tab.active {
+  background: linear-gradient(135deg, rgba(124,58,237,0.25) 0%, rgba(168,85,247,0.18) 100%);
+  color: #c4b5fd;
+  border: 1px solid rgba(124,58,237,0.4);
+  box-shadow: 0 2px 10px rgba(124,58,237,0.2);
+}
+
+/* img2gif from original preview card */
+.img2gif-from-original-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+}
+.img2gif-original-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.3);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+}
+.img2gif-original-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.img2gif-no-original {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
 /* ── Image to GIF ── */
 .img2gif-upload-area {
   display: flex;
@@ -1310,6 +1390,21 @@ body.eyedrop-mode #originalImg {
   gap: 6px;
   cursor: pointer;
 }
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
+}
+
 .app-wrapper.frame-editor-mode {
   max-width: 1260px;
   transition: max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1498,6 +1593,40 @@ body.eyedrop-mode #originalImg {
   background: var(--bg-hover);
   border-color: var(--accent-1);
 }
+
+.frame-filmstrip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.frame-filmstrip-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.frame-filmstrip-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.frame-filmstrip-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 2px 10px;
+  border-radius: 100px;
+  font-weight: 500;
+}
+.frame-timeline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .frame-filmstrip-section {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -1526,6 +1655,39 @@ body.eyedrop-mode #originalImg {
   background: var(--accent-1);
 }
 .filmstrip-item {
+  position: relative;
+.filmstrip-del-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.9);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.75);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  padding: 0;
+}
+.filmstrip-item:hover .filmstrip-del-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+.filmstrip-del-btn:hover {
+  background: #dc2626;
+  border-color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
   flex: 0 0 auto;
   width: 90px;
   background: var(--bg-elevated);

@@ -251,21 +251,55 @@
 
           <!-- Image to GIF Controls -->
           <div id="imgToGifControls" class="hidden">
-            <!-- Multi-image upload area -->
-            <div class="img2gif-upload-area" id="img2gifUploadArea">
-              <input type="file" id="img2gifFileInput" accept="image/*" multiple hidden />
-              <div class="img2gif-drop-zone" id="img2gifDropZone">
-                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
-                  <rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2" />
-                  <path d="M4 34l10-10 7 7 8-10 15 13" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-                  <circle cx="15" cy="20" r="3" stroke="currentColor" stroke-width="2" />
-                </svg>
-                <p style="margin:8px 0 4px; font-weight:600; color: #c4b5fd;" data-i18n="img2gifDropTitle">Drag & drop multiple images here</p>
-                <p style="font-size:12px; color:#8892b0; margin:0 0 10px;" data-i18n="img2gifDropSub">Supports PNG, JPG, JPEG, WEBP, BMP...</p>
-                <button class="btn-browse" onclick="document.getElementById('img2gifFileInput').click()"
-                  style="font-size:13px; padding:8px 18px;" data-i18n="img2gifBrowseBtn">Choose Images</button>
+            <!-- Mode Switcher -->
+            <div class="img2gif-mode-tabs">
+              <button class="img2gif-mode-tab active" id="img2gifModeOriginal">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/></svg>
+                <span data-i18n="img2gifModeOriginal">From Original Image</span>
+              </button>
+              <button class="img2gif-mode-tab" id="img2gifModeMulti">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/></svg>
+                <span data-i18n="img2gifModeMulti">Add Multiple Images</span>
+              </button>
+            </div>
+
+            <!-- Mode 1: From Original Image -->
+            <div id="img2gifOriginalMode">
+              <div class="img2gif-from-original-card" id="img2gifOriginalPreviewCard">
+                <div class="img2gif-original-preview">
+                  <img id="img2gifOriginalThumb" src="" alt="Original" />
+                </div>
+                <div class="img2gif-original-info">
+                  <p id="img2gifOriginalName" style="font-weight:600; font-size:13px; color:var(--text-primary); margin:0 0 4px;"></p>
+                  <p id="img2gifOriginalDims" style="font-size:12px; color:var(--text-secondary); margin:0;"></p>
+                </div>
               </div>
-              <div class="img2gif-thumb-list" id="img2gifThumbList"></div>
+              <div class="img2gif-no-original hidden" id="img2gifNoOriginal">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" style="opacity:0.4;">
+                  <rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2"/>
+                  <path d="M4 34l10-10 7 7 8-10 15 13" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                <p data-i18n="img2gifNoOriginalHint">No image loaded yet. Please load a static image first.</p>
+              </div>
+            </div>
+
+            <!-- Mode 2: Multiple Images Upload -->
+            <div id="img2gifMultiMode" class="hidden">
+              <div class="img2gif-upload-area" id="img2gifUploadArea">
+                <input type="file" id="img2gifFileInput" accept="image/*" multiple hidden />
+                <div class="img2gif-drop-zone" id="img2gifDropZone">
+                  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+                    <rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M4 34l10-10 7 7 8-10 15 13" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                    <circle cx="15" cy="20" r="3" stroke="currentColor" stroke-width="2" />
+                  </svg>
+                  <p style="margin:8px 0 4px; font-weight:600; color: #c4b5fd;" data-i18n="img2gifDropTitle">Drag &amp; drop multiple images here</p>
+                  <p style="font-size:12px; color:#8892b0; margin:0 0 10px;" data-i18n="img2gifDropSub">Supports PNG, JPG, JPEG, WEBP, BMP...</p>
+                  <button class="btn-browse" onclick="document.getElementById('img2gifFileInput').click()"
+                    style="font-size:13px; padding:8px 18px;" data-i18n="img2gifBrowseBtn">Choose Images</button>
+                </div>
+                <div class="img2gif-thumb-list" id="img2gifThumbList"></div>
+              </div>
             </div>
 
             <div class="controls-grid" style="margin-top: 16px;">
@@ -313,7 +347,15 @@
             </div>
 
             <div class="actions">
-              <button class="btn-secondary" id="img2gifClearBtn">
+              <button class="btn-secondary" id="img2gifChooseAnotherBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span data-i18n="chooseAnotherFile">Choose another file</span>
+              </button>
+              <button class="btn-secondary" id="img2gifClearBtn" style="display:none;">
                 <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
                   <path fill-rule="evenodd"
                     d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
@@ -343,11 +385,20 @@
               </div>
 
               <div class="control-group">
-                <label class="control-label" data-i18n="videoSizeLabel">Export Size</label>
+                <label class="control-label" data-i18n="videoSizeLabel">Export Size & Upscale</label>
                 <div class="effect-options">
-                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="0.3"><span data-i18n="videoSize30">Scale 30% (~240p · Ultra light)</span></label>
-                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="0.5" checked><span data-i18n="videoSize50">Scale 50% (~380p · Standard)</span></label>
-                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="original"><span data-i18n="videoSizeOrig">Original (Very heavy)</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="original" checked><span data-i18n="videoSizeOrig">100% Original</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="2"><span data-i18n="videoSize2x">Upscale 2x (HD)</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="4"><span data-i18n="videoSize4x">Upscale 4x (Super HD)</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="0.5"><span data-i18n="videoSize50">Scale 50%</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="0.3"><span data-i18n="videoSize30">Scale 30%</span></label>
+                </div>
+                <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 3px;">
+                  <label class="control-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:0;">
+                    <input type="checkbox" id="videoToGifEnhance" checked style="width:16px;height:16px;accent-color:#a855f7;" />
+                    <span style="font-weight:600;font-size:13px;" data-i18n="videoEnhanceLabel">✨ Tăng độ nét viền & chi tiết (Smart Sharpen)</span>
+                  </label>
+                  <p style="font-size: 11.5px; color: #8892b0; margin: 0 0 0 24px;" data-i18n="videoEnhanceSub">Tự động khử mờ nhòe, tăng độ tương phản đường viền nhân vật 2D</p>
                 </div>
               </div>
 
@@ -477,11 +528,11 @@
 
             <!-- Action buttons -->
             <div class="frame-editor-actions">
-              <button class="btn-sm btn-secondary" id="frameUndoBtn" data-i18n-title="frameUndoTitle" title="Undo last action (Ctrl+Z)">
+              <button class="btn-sm btn-secondary" id="frameUndoBtn" data-i18n-title="frameUndoTitle" title="Undo background erase (Ctrl+Z)">
                 <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
                   <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                <span data-i18n="frameUndoBtn">Undo</span>
+                <span data-i18n="frameUndoBtn">Undo Erase</span>
               </button>
               <button class="btn-sm btn-secondary" id="frameApplyAllBtn" data-i18n-title="frameApplyAllTitle" title="Erase this color at the same position across ALL frames">
                 <span data-i18n="frameApplyAllBtn">🌐 Apply to All Frames</span>
@@ -537,9 +588,25 @@
 
           <!-- Bottom Timeline Filmstrip -->
           <div class="frame-filmstrip-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);" data-i18n="frameFilmstripTitle">Frames timeline (Click frame to edit):</span>
-              <span id="frameFilmstripCount" style="font-size: 12px; color: var(--text-secondary);"></span>
+            <div class="frame-filmstrip-header">
+              <div class="frame-filmstrip-title-wrap">
+                <span class="frame-filmstrip-title" data-i18n="frameFilmstripTitle">Frames timeline (Click frame to edit):</span>
+                <span id="frameFilmstripCount" class="frame-filmstrip-count"></span>
+              </div>
+              <div class="frame-timeline-actions">
+                <button type="button" class="btn-sm btn-secondary" id="frameRestoreBtn" disabled style="opacity:0.5; pointer-events:none;" data-i18n-title="frameRestoreTitle" title="Restore last deleted frame (Ctrl+Shift+Z)">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                    <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span id="frameRestoreBtnText" data-i18n="frameRestoreBtn">Restore Frame</span>
+                </button>
+                <button type="button" class="btn-sm btn-danger" id="frameDeleteBtn" data-i18n-title="frameDeleteTitle" title="Delete current frame (Delete key)">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                  <span data-i18n="frameDeleteBtn">Delete Frame</span>
+                </button>
+              </div>
             </div>
             <div class="frame-filmstrip" id="frameFilmstrip">
               <!-- Thumbnails generated by JS -->

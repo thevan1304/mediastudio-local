@@ -79,6 +79,8 @@ const frameBrushSizeVal     = document.getElementById('frameBrushSizeVal');
 const frameUndoBtn          = document.getElementById('frameUndoBtn');
 const frameApplyAllBtn      = document.getElementById('frameApplyAllBtn');
 const frameResetBtn         = document.getElementById('frameResetBtn');
+const frameDeleteBtn        = document.getElementById('frameDeleteBtn');
+const frameRestoreBtn       = document.getElementById('frameRestoreBtn');
 const frameEditorWrap       = document.getElementById('frameEditorWrap');
 const frameEditorCanvas     = document.getElementById('frameEditorCanvas');
 const framePrevBtn          = document.getElementById('framePrevBtn');
@@ -93,6 +95,7 @@ const frameZoomInBtn        = document.getElementById('frameZoomInBtn');
 const frameZoomVal          = document.getElementById('frameZoomVal');
 
 let gifFrames = [];
+let deletedFramesStack = [];
 let activeFrameIndex = 0;
 let currentFrameTool = 'wand';
 let isErasingOnFrame = false;
@@ -107,12 +110,23 @@ let panStartX = 0, panStartY = 0, scrollStartX = 0, scrollStartY = 0;
 // ─── Image to GIF DOM refs ─────────────────────────────────────────────
 const tabImgToGif       = document.getElementById('tabImgToGif');
 const imgToGifControls  = document.getElementById('imgToGifControls');
+const img2gifModeOriginalBtn = document.getElementById('img2gifModeOriginal');
+const img2gifModeMultiBtn = document.getElementById('img2gifModeMulti');
+const img2gifOriginalMode = document.getElementById('img2gifOriginalMode');
+const img2gifMultiMode   = document.getElementById('img2gifMultiMode');
+const img2gifOriginalThumb = document.getElementById('img2gifOriginalThumb');
+const img2gifOriginalName  = document.getElementById('img2gifOriginalName');
+const img2gifOriginalDims  = document.getElementById('img2gifOriginalDims');
+const img2gifOriginalPreviewCard = document.getElementById('img2gifOriginalPreviewCard');
+const img2gifNoOriginal    = document.getElementById('img2gifNoOriginal');
+let img2gifCurrentMode = 'original';
 const img2gifFileInput  = document.getElementById('img2gifFileInput');
 const img2gifDropZone   = document.getElementById('img2gifDropZone');
 const img2gifThumbList  = document.getElementById('img2gifThumbList');
 const img2gifDelaySlider= document.getElementById('img2gifDelaySlider');
 const img2gifDelayVal   = document.getElementById('img2gifDelayVal');
 const img2gifClearBtn   = document.getElementById('img2gifClearBtn');
+const img2gifChooseAnotherBtn = document.getElementById('img2gifChooseAnotherBtn');
 const img2gifConvertBtn = document.getElementById('img2gifConvertBtn');
 const img2gifCanvas     = document.getElementById('img2gifCanvas');
 const img2gifCustomSizeWrap = document.getElementById('img2gifCustomSizeWrap');
@@ -189,6 +203,12 @@ const I18N = {
     effectWobble: 'Wobble', effectPulse: 'Pulse', effectBounce: 'Bounce', effectSpin: 'Spin', effectFloat: 'Float',
     animIntensityLabel: 'Intensity:', animIntensityMild: 'Mild', animIntensityStrong: 'Strong',
     animSpeedLabel: 'Speed:', animBtnText: 'Generate Animated GIF',
+    img2gifModeOriginal: '📷 From Original Image',
+    img2gifModeMulti: '🖼️ Add Multiple Images',
+    img2gifNoOriginalHint: 'No image loaded. Please load a static image (PNG / JPG) first.',
+    img2gifModeOriginal: '📷 From Original Image',
+    img2gifModeMulti: '🖼️ Add Multiple Images',
+    img2gifNoOriginalHint: 'No image loaded. Please load a static image (PNG / JPG) first.',
     img2gifDropTitle: 'Drag & drop multiple images here',
     img2gifDropSub: 'Supports PNG, JPG, JPEG, WEBP, BMP...',
     img2gifBrowseBtn: 'Choose Images', img2gifDelayLabel: 'Delay per image:', img2gifSizeLabel: 'Export Size',
@@ -208,9 +228,14 @@ const I18N = {
     muteLabel: 'Remove all audio tracks from video', muteBtn: 'Mute Video',
     frameWandTool: '\uD83E\uDE84 Wand (Click area)', frameEraserTool: '\uD83D\uDD8C\uFE0F Eraser',
     frameBrushSizeLabel: 'Brush Size:',
-    frameUndoBtn: 'Undo', frameUndoTitle: 'Undo last action (Ctrl+Z)',
+    frameUndoBtn: 'Undo Erase', frameUndoTitle: 'Undo background erase action (Ctrl+Z)',
+    frameRestoreBtn: 'Restore Frame', frameRestoreTitle: 'Restore last deleted frame in timeline (Ctrl+Shift+Z)',
+    toastNoDeletedFrames: 'No deleted frames to restore!',
     frameApplyAllBtn: '\uD83C\uDF10 Apply to All Frames', frameApplyAllTitle: 'Erase this color at same position across ALL frames',
     frameResetBtn: 'Reset Frame', frameResetTitle: 'Restore this frame',
+    frameDeleteBtn: 'Delete Frame', frameDeleteTitle: 'Delete current frame (Delete key)',
+    toastFrameDeleted: 'Frame #{idx} deleted.', toastFrameDeleteUndo: 'Frame #{idx} restored.',
+    toastMinFramesError: 'GIF must have at least 1 frame!',
     frameZoomTitle: 'Zoom:', frameZoomOutTitle: 'Zoom out (\u2212)', frameZoomInTitle: 'Zoom in (+)',
     frameZoomFit: 'Fit View', frameZoomFitTitle: 'Auto fit to screen', frameZoomOrigTitle: 'Original size 100%',
     frameZoomTip: '\uD83D\uDCA1 Select <strong>Fit View</strong> or <strong>200%\u2013300%</strong> to easily edit fine details',
@@ -238,7 +263,7 @@ const I18N = {
     toastBgRemoved: 'Background removed successfully! \uD83C\uDF89',
     toastAnimateStaticOnly: 'Animate effect only supports static images, not GIFs!',
     toastDropImagesOnly: 'Please drop image files!',
-    toastAtLeastTwoImages: 'Please add at least 2 images!',
+    toastAtLeastOneImage: 'Please load a static image first!', toastAtLeastOneImage: 'Please load a static image first!', toastAtLeastTwoImages: 'Please add at least 2 images!',
     toastGifCreated: 'GIF created successfully! \uD83C\uDF89',
     toastErrorCreateGif: 'Error creating GIF: {err}',
     toastLoadedVideo: 'Video loaded successfully!', toastVideoNotSupported: 'Browser does not support this video format.',
@@ -596,6 +621,7 @@ function switchTab(tab) {
       tabImgToGif.classList.add('active');
       imgToGifControls.classList.remove('hidden');
       if (placeholderResult) placeholderResult.innerHTML = `<p>${t('placeholderImgToGif')}</p>`;
+      updateImg2gifOriginalPreview();
     }
 
     if (resultBlobUrl) {
@@ -627,6 +653,7 @@ tabVideoToGif.addEventListener('click', () => switchTab('videoToGif'));
 tabMuteVideo.addEventListener('click', () => switchTab('muteVideo'));
 videoChooseAnotherBtn.addEventListener('click', resetAll);
 if (frameChooseAnotherBtn) frameChooseAnotherBtn.addEventListener('click', resetAll);
+if (img2gifChooseAnotherBtn) img2gifChooseAnotherBtn.addEventListener('click', resetAll);
 
 // ─── Drag & Drop ──────────────────────────────────────────────────────────────
 ['dragenter','dragover'].forEach(evt =>
@@ -649,6 +676,49 @@ bgColorInput.addEventListener('input', () => { colorValue.textContent = bgColorI
 toleranceSlider.addEventListener('input', () => { toleranceVal.textContent = toleranceSlider.value; });
 featherSlider.addEventListener('input', () => { featherVal.textContent = featherSlider.value; });
 speedSlider.addEventListener('input', () => { speedVal.textContent = parseFloat(speedSlider.value).toFixed(2); });
+
+// ─── Image to GIF Mode Switcher ─────────────────────────────────────────────
+function switchImg2gifMode(mode) {
+  img2gifCurrentMode = mode;
+  // Update tab buttons
+  img2gifModeOriginalBtn?.classList.toggle('active', mode === 'original');
+  img2gifModeMultiBtn?.classList.toggle('active', mode === 'multi');
+  // Show/hide panels
+  if (img2gifOriginalMode) img2gifOriginalMode.classList.toggle('hidden', mode !== 'original');
+  if (img2gifMultiMode)    img2gifMultiMode.classList.toggle('hidden', mode !== 'multi');
+  // Show/hide clear btn
+  const clearBtn = document.getElementById('img2gifClearBtn');
+  if (clearBtn) clearBtn.style.display = mode === 'multi' ? '' : 'none';
+}
+
+function updateImg2gifOriginalPreview() {
+  if (!img2gifOriginalThumb) return;
+  const srcImg = (resultImg && resultImg.src && resultImg.src.startsWith('blob:') && !resultImg.classList.contains('hidden')) 
+    ? resultImg 
+    : staticImgObj;
+  if (isStaticImage && srcImg) {
+    img2gifOriginalPreviewCard?.classList.remove('hidden');
+    img2gifNoOriginal?.classList.add('hidden');
+    img2gifOriginalThumb.src = srcImg.src;
+    if (img2gifOriginalName && currentFile) img2gifOriginalName.textContent = currentFile.name;
+    if (img2gifOriginalDims) {
+      const w = srcImg.naturalWidth || srcImg.width || 0;
+      const h = srcImg.naturalHeight || srcImg.height || 0;
+      img2gifOriginalDims.textContent = `${w} × ${h} px`;
+    }
+  } else {
+    img2gifOriginalPreviewCard?.classList.add('hidden');
+    img2gifNoOriginal?.classList.remove('hidden');
+    if (img2gifOriginalThumb) img2gifOriginalThumb.src = '';
+  }
+}
+
+img2gifModeOriginalBtn?.addEventListener('click', () => switchImg2gifMode('original'));
+img2gifModeMultiBtn?.addEventListener('click', () => switchImg2gifMode('multi'));
+
+// Initialize
+switchImg2gifMode('original');
+
 img2gifDelaySlider.addEventListener('input', () => { img2gifDelayVal.textContent = img2gifDelaySlider.value; });
 function updateVideoToGifEstimate() {
   if (!videoPlayer || !Number.isFinite(videoPlayer.duration) || videoPlayer.duration <= 0) return;
@@ -670,9 +740,11 @@ function updateVideoToGifEstimate() {
   const dur = Math.max(0.1, end - start);
   const frames = Math.ceil(dur * fps);
   
-  const sizeVal = document.querySelector('input[name="videoToGifSize"]:checked')?.value || '0.5';
-  let scale = 0.5;
-  if (sizeVal === 'original') scale = 1;
+  const sizeVal = document.querySelector('input[name="videoToGifSize"]:checked')?.value || 'original';
+  let scale = 1;
+  if (sizeVal === '2') scale = 2;
+  else if (sizeVal === '4') scale = 4;
+  else if (sizeVal === '0.5') scale = 0.5;
   else if (sizeVal === '0.3') scale = 0.3;
   
   const w = Math.round(videoPlayer.videoWidth * scale);
@@ -690,6 +762,7 @@ videoToGifFps.addEventListener('input', () => {
   videoToGifFpsVal.textContent = videoToGifFps.value;
   updateVideoToGifEstimate();
 });
+document.getElementById('videoToGifEnhance')?.addEventListener('change', updateVideoToGifEstimate);
 document.querySelectorAll('input[name="videoToGifSize"]').forEach(r => {
   r.addEventListener('change', updateVideoToGifEstimate);
 });
@@ -920,6 +993,7 @@ function loadStaticImage(file, objectUrl) {
   const img = new Image();
   img.onload = () => {
     staticImgObj = img;
+  updateImg2gifOriginalPreview();
     originalImg.src = objectUrl;
     originalMeta.textContent = `${file.name} · ${formatBytes(file.size)} · ${img.naturalWidth}x${img.naturalHeight}`;
     
@@ -1114,9 +1188,24 @@ img2gifClearBtn.addEventListener('click', () => {
 });
 
 img2gifConvertBtn.addEventListener('click', async () => {
-  if (img2gifImages.length < 2) {
-    showToast(t('toastAtLeastTwoImages'), 'error');
-    return;
+  // Determine image list based on current mode
+  let imagesToProcess = [];
+  
+  if (img2gifCurrentMode === 'original') {
+    // Mode 1: Use the original (or processed) static image
+    const srcImg = (resultImg.src.startsWith('blob:') && !resultImg.classList.contains('hidden')) ? resultImg : staticImgObj;
+    if (!isStaticImage || !srcImg) {
+      showToast(t('img2gifNoOriginalHint'), 'error');
+      return;
+    }
+    imagesToProcess = [{ img: srcImg }];
+  } else {
+    // Mode 2: Use manually uploaded images
+    if (img2gifImages.length < 2) {
+      showToast(t('toastAtLeastTwoImages'), 'error');
+      return;
+    }
+    imagesToProcess = img2gifImages;
   }
   
   const delay = parseInt(img2gifDelaySlider.value);
@@ -1125,7 +1214,7 @@ img2gifConvertBtn.addEventListener('click', async () => {
   const loop = document.getElementById('img2gifLoop').checked ? 0 : -1;
   
   // Determine output dimensions
-  const firstImg = img2gifImages[0].img;
+  const firstImg = imagesToProcess[0].img;
   let outW, outH;
   if (sizeOpt === 'original') {
     outW = firstImg.naturalWidth;
@@ -1167,10 +1256,10 @@ img2gifConvertBtn.addEventListener('click', async () => {
   img2gifCanvas.height = outH;
   const ctx = img2gifCanvas.getContext('2d');
   
-  for (let i = 0; i < img2gifImages.length; i++) {
-    updateProgress(Math.round((i / img2gifImages.length) * 70), `Đang xử lý ảnh ${i+1}/${img2gifImages.length}`);
+  for (let i = 0; i < imagesToProcess.length; i++) {
+    updateProgress(Math.round((i / imagesToProcess.length) * 70), `Đang xử lý ảnh ${i+1}/${imagesToProcess.length}`);
     ctx.clearRect(0, 0, outW, outH);
-    ctx.drawImage(img2gifImages[i].img, 0, 0, outW, outH);
+    ctx.drawImage(imagesToProcess[i].img, 0, 0, outW, outH);
     gif.addFrame(ctx, { copy: true, delay });
     await sleep(5);
   }
@@ -1186,7 +1275,7 @@ img2gifConvertBtn.addEventListener('click', async () => {
     resultImg.src = resultBlobUrl;
     resultImg.classList.remove('hidden');
     placeholderResult.style.display = 'none';
-    resultMeta.textContent = `GIF · ${img2gifImages.length} ảnh · ${formatBytes(blob.size)}`;
+    resultMeta.textContent = `GIF · ${imagesToProcess.length} ảnh · ${formatBytes(blob.size)}`;
     
     updateProgress(100, 'Hoàn tất!');
     progressSection.classList.add('hidden');
@@ -1268,6 +1357,38 @@ function seekVideo(time) {
   return waitForVideoEvent('seeked');
 }
 
+function applySharpen(ctx, width, height, amount = 0.4) {
+  try {
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const src = imgData.data;
+    const output = ctx.createImageData(width, height);
+    const dst = output.data;
+    const a = amount;
+    const centerWeight = 1 + 4 * a;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        dst[idx + 3] = src[idx + 3];
+
+        for (let c = 0; c < 3; c++) {
+          const cur = src[idx + c];
+          const up    = (y > 0) ? src[((y - 1) * width + x) * 4 + c] : cur;
+          const down  = (y < height - 1) ? src[((y + 1) * width + x) * 4 + c] : cur;
+          const left  = (x > 0) ? src[(y * width + (x - 1)) * 4 + c] : cur;
+          const right = (x < width - 1) ? src[(y * width + (x + 1)) * 4 + c] : cur;
+
+          const val = cur * centerWeight - (up + down + left + right) * a;
+          dst[idx + c] = Math.min(255, Math.max(0, Math.round(val)));
+        }
+      }
+    }
+    ctx.putImageData(output, 0, 0);
+  } catch (e) {
+    console.warn('Sharpen skipped:', e);
+  }
+}
+
 videoToGifConvertBtn.addEventListener('click', async () => {
   if (!videoToGifFile || !Number.isFinite(videoPlayer.duration)) {
     showToast(t('toastSelectVideoFirst'), 'error');
@@ -1293,10 +1414,13 @@ videoToGifConvertBtn.addEventListener('click', async () => {
   const frameCount = Math.ceil(duration * fps);
   if (frameCount > 1200 && !confirm(t('confirmManyFrames', { count: frameCount }))) return;
 
-  const sizeChoice = document.querySelector('input[name="videoToGifSize"]:checked')?.value || '0.5';
-  let scale = 0.5;
-  if (sizeChoice === '0.3') scale = 0.3;
-  else if (sizeChoice === 'original') scale = 1;
+  const sizeChoice = document.querySelector('input[name="videoToGifSize"]:checked')?.value || 'original';
+  let scale = 1;
+  if (sizeChoice === '2') scale = 2;
+  else if (sizeChoice === '4') scale = 4;
+  else if (sizeChoice === '0.5') scale = 0.5;
+  else if (sizeChoice === '0.3') scale = 0.3;
+  const enhanceEnabled = document.getElementById('videoToGifEnhance')?.checked;
 
   const width = Math.max(1, Math.round(videoPlayer.videoWidth * scale));
   const height = Math.max(1, Math.round(videoPlayer.videoHeight * scale));
@@ -1316,7 +1440,12 @@ videoToGifConvertBtn.addEventListener('click', async () => {
     for (let i = 0; i < frameCount; i++) {
       const targetTime = Math.min(startTime + (i / fps), Math.max(startTime, endTime - 0.001));
       await seekVideo(targetTime);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(videoPlayer, 0, 0, width, height);
+      if (enhanceEnabled) {
+        applySharpen(ctx, width, height, scale >= 2 ? 0.45 : 0.35);
+      }
       gif.addFrame(ctx, { copy: true, delay: Math.round(1000 / fps) });
       updateProgress(Math.round(((i + 1) / frameCount) * 70), `Đang lấy khung hình ${i + 1}/${frameCount}`);
     }
@@ -1789,6 +1918,17 @@ function renderFilmstrip() {
     item.className = 'filmstrip-item' + (idx === activeFrameIndex ? ' active' : '');
     item.id = `filmstripItem-${idx}`;
 
+    // Quick delete button on hover
+    const delBtn = document.createElement('button');
+    delBtn.className = 'filmstrip-del-btn';
+    delBtn.title = t('frameDeleteTitle');
+    delBtn.setAttribute('aria-label', `Delete frame ${idx + 1}`);
+    delBtn.innerHTML = '<svg viewBox="0 0 20 20" fill="currentColor" width="11" height="11"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteFrame(idx);
+    });
+
     const thumbWrap = document.createElement('div');
     thumbWrap.className = 'filmstrip-thumb-wrap checkered';
 
@@ -1805,12 +1945,66 @@ function renderFilmstrip() {
     label.className = 'filmstrip-label';
     label.textContent = `#${idx + 1}`;
 
+    item.appendChild(delBtn);
     item.appendChild(thumbWrap);
     item.appendChild(label);
 
     item.addEventListener('click', () => setActiveFrame(idx));
     frameFilmstrip.appendChild(item);
   });
+}
+
+function updateTimelineUndoBtn() {
+  if (!frameRestoreBtn) return;
+  const count = deletedFramesStack.length;
+  frameRestoreBtn.disabled = (count === 0);
+  frameRestoreBtn.style.opacity = (count === 0) ? '0.5' : '1';
+  frameRestoreBtn.style.pointerEvents = (count === 0) ? 'none' : 'auto';
+  const textEl = document.getElementById('frameRestoreBtnText');
+  if (textEl) {
+    textEl.textContent = count > 0 
+      ? `${t('frameRestoreBtn')} (${count})` 
+      : t('frameRestoreBtn');
+  }
+}
+
+function restoreDeletedFrame() {
+  if (!deletedFramesStack || deletedFramesStack.length === 0) {
+    showToast(t('toastNoDeletedFrames') || 'Không có frame nào để khôi phục!', 'info');
+    return;
+  }
+  const item = deletedFramesStack.pop();
+  const restoreIdx = Math.min(item.index, gifFrames.length);
+  gifFrames.splice(restoreIdx, 0, item.frame);
+
+  renderFilmstrip();
+  setActiveFrame(restoreIdx);
+  updateTimelineUndoBtn();
+  showToast(t('toastFrameDeleteUndo', { idx: restoreIdx + 1 }), 'success');
+}
+
+function deleteFrame(idx) {
+  if (!gifFrames || gifFrames.length <= 1) {
+    showToast(t('toastMinFramesError'), 'warning');
+    return;
+  }
+  if (idx < 0 || idx >= gifFrames.length) return;
+
+  const deletedNum = idx + 1;
+  const deletedFrame = gifFrames[idx];
+  deletedFramesStack.push({ frame: deletedFrame, index: idx });
+  gifFrames.splice(idx, 1);
+
+  if (activeFrameIndex >= gifFrames.length) {
+    activeFrameIndex = gifFrames.length - 1;
+  } else if (activeFrameIndex > idx) {
+    activeFrameIndex--;
+  }
+
+  renderFilmstrip();
+  setActiveFrame(activeFrameIndex);
+  updateTimelineUndoBtn();
+  showToast(t('toastFrameDeleted', { idx: deletedNum }), 'info');
 }
 
 function updateThumbnail(idx) {
@@ -2161,6 +2355,7 @@ window.addEventListener('resize', () => {
   }
 });
 
+// 1. Undo cho XÓA NỀN (Wand / Eraser trên canvas)
 if (frameUndoBtn) {
   frameUndoBtn.addEventListener('click', () => {
     const frame = gifFrames[activeFrameIndex];
@@ -2172,6 +2367,19 @@ if (frameUndoBtn) {
     drawActiveFrame();
     updateThumbnail(activeFrameIndex);
     showToast(t('toastUndid'), 'success');
+  });
+}
+
+// 2. Xóa và Undo cho FRAMES TIMELINE
+if (frameDeleteBtn) {
+  frameDeleteBtn.addEventListener('click', () => {
+    deleteFrame(activeFrameIndex);
+  });
+}
+
+if (frameRestoreBtn) {
+  frameRestoreBtn.addEventListener('click', () => {
+    restoreDeletedFrame();
   });
 }
 
@@ -2220,9 +2428,17 @@ window.addEventListener('keydown', e => {
   } else if (e.key === 'ArrowRight') {
     e.preventDefault();
     setActiveFrame(activeFrameIndex + 1);
+  } else if ((e.ctrlKey || e.metaKey) && (e.shiftKey) && (e.key === 'z' || e.key === 'Z')) {
+    e.preventDefault();
+    restoreDeletedFrame();
   } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
     e.preventDefault();
     frameUndoBtn.click();
+  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (!e.target.matches('input, textarea, select, [contenteditable]')) {
+      e.preventDefault();
+      deleteFrame(activeFrameIndex);
+    }
   }
 });
 
@@ -2549,6 +2765,8 @@ function resetAll() {
   resultMeta.textContent = '';
 
   gifFrames = [];
+  deletedFramesStack = [];
+  updateTimelineUndoBtn();
   activeFrameIndex = 0;
   lastWandPoint = null;
   lastProcessedFrames = null;
@@ -2602,7 +2820,18 @@ function downloadResult() {
   const a = document.createElement('a');
   a.href = resultBlobUrl;
   
-  if (currentTab === 'videoToGif') {
+  if (currentTab === 'imgToGif') {
+    let baseName = 'animation';
+    if (img2gifCurrentMode === 'original' && currentFile) {
+      baseName = currentFile.name.replace(/\.[^/.]+$/, '');
+    } else if (img2gifImages.length > 0 && img2gifImages[0]?.file?.name) {
+      baseName = img2gifImages[0].file.name.replace(/\.[^/.]+$/, '');
+    } else if (currentFile) {
+      baseName = currentFile.name.replace(/\.[^/.]+$/, '');
+    }
+    a.download = baseName + '.gif';
+  }
+  else if (currentTab === 'videoToGif') {
     const baseName = currentFile ? currentFile.name.replace(/\.[^/.]+$/, '') : 'result';
     a.download = baseName + '.gif';
   }
