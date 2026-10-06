@@ -1,3 +1,12 @@
+import { makeZip } from '../../utils/zip';
+import { chooseGifTransparencyKey, applyGifTransparencyKey } from '../gif/transparency';
+import { I18N, LANGS } from '../../locales/messages';
+import { removeBackground } from '../background/removeBackground';
+import { trimVideo, joinVideos } from '../video/editVideo';
+
+export function initStudio(): void {
+const el = (id: string): any => document.getElementById(id);
+const q = (selector: string): any => document.querySelector(selector);
 /**
  * GIFEraser – GIF Background Remover
  * Uses libgif (SuperGif) to extract frames, then gif.js to re-encode with transparency.
@@ -15,83 +24,83 @@ let frameCount    = 0;
 let frameDelays   = [];
 let resultBlobUrl = null;
 let sourceBlobUrl = null;
-let lastStaticProcessedUrl = null; // Save static transparent image for animation
 let customSeeds   = [];     // Tọa độ click thủ công để xóa nền lọt thỏm
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
-const fileInput         = document.getElementById('fileInput');
-const dropZone          = document.getElementById('dropZone');
-const uploadSection     = document.getElementById('uploadSection');
-const workspace         = document.getElementById('workspace');
-const originalImg       = document.getElementById('originalImg');
-const originalMeta      = document.getElementById('originalMeta');
-const resultImg         = document.getElementById('resultImg');
-const resultMeta        = document.getElementById('resultMeta');
-const placeholderResult = document.getElementById('placeholderResult');
-const bgColorInput      = document.getElementById('bgColor');
-const colorValue        = document.getElementById('colorValue');
-const toleranceSlider   = document.getElementById('toleranceSlider');
-const toleranceVal      = document.getElementById('toleranceVal');
-const featherSlider     = document.getElementById('featherSlider');
-const featherVal        = document.getElementById('featherVal');
-const speedSlider       = document.getElementById('speedSlider');
-const speedVal          = document.getElementById('speedVal');
-const compressSlider    = document.getElementById('compressSlider');
-const compressVal       = document.getElementById('compressVal');
-const compressHint      = document.getElementById('compressHint');
-const processBtn        = document.getElementById('processBtn');
-const resetBtn          = document.getElementById('resetBtn');
-const downloadBtn       = document.getElementById('downloadBtn');
-const progressSection   = document.getElementById('progressSection');
-const progressLabel     = document.getElementById('progressLabel');
-const progressPct       = document.getElementById('progressPct');
-const progressFill      = document.getElementById('progressFill');
-const frameInfo         = document.getElementById('frameInfo');
-const downloadSection   = document.getElementById('downloadSection');
-const successBadgeText  = document.getElementById('successBadgeText');
-const processBtnText    = document.getElementById('processBtnText');
-const downloadBtnText   = document.getElementById('downloadBtnText');
-const resultVideo       = document.getElementById('resultVideo');
+const fileInput         = el('fileInput');
+const dropZone          = el('dropZone');
+const uploadSection     = el('uploadSection');
+const workspace         = el('workspace');
+const originalImg       = el('originalImg');
+const originalMeta      = el('originalMeta');
+const resultImg         = el('resultImg');
+const resultMeta        = el('resultMeta');
+const placeholderResult = el('placeholderResult');
+const bgColorInput      = el('bgColor');
+const colorValue        = el('colorValue');
+const toleranceSlider   = el('toleranceSlider');
+const toleranceVal      = el('toleranceVal');
+const featherSlider     = el('featherSlider');
+const featherVal        = el('featherVal');
+const speedSlider       = el('speedSlider');
+const speedVal          = el('speedVal');
+const compressSlider    = el('compressSlider');
+const compressVal       = el('compressVal');
+const compressHint      = el('compressHint');
+const processBtn        = el('processBtn');
+const resetBtn          = el('resetBtn');
+const downloadBtn       = el('downloadBtn');
+const progressSection   = el('progressSection');
+const progressLabel     = el('progressLabel');
+const progressPct       = el('progressPct');
+const progressFill      = el('progressFill');
+const frameInfo         = el('frameInfo');
+const downloadSection   = el('downloadSection');
+const successBadgeText  = el('successBadgeText');
+const processBtnText    = el('processBtnText');
+const downloadBtnText   = el('downloadBtnText');
+const resultVideo       = el('resultVideo');
 let mutedVideoBlobUrl   = null;
-const eyedropBtn        = document.getElementById('eyedropBtn');
-const eyedropHint       = document.getElementById('eyedropHint');
-const eyedropCanvas     = document.getElementById('eyedropCanvas');
-const manualSeedHint   = document.getElementById('manualSeedHint');
-const previewRow        = document.getElementById('previewRow');
-const controlsPanel     = document.getElementById('controlsPanel');
+const eyedropBtn        = el('eyedropBtn');
+const eyedropHint       = el('eyedropHint');
+const eyedropCanvas     = el('eyedropCanvas');
+const manualSeedHint   = el('manualSeedHint');
+const previewRow        = el('previewRow');
+const controlsPanel     = el('controlsPanel');
 
 // ─── Animation & Tabs DOM refs ────────────────────────────────────────────────
-const tabsContainer     = document.getElementById('tabsContainer');
-const tabBgRemove       = document.getElementById('tabBgRemove');
-const tabFrameEditor    = document.getElementById('tabFrameEditor');
+const tabsContainer     = el('tabsContainer');
+const tabBgRemove       = el('tabBgRemove');
+const tabFrameEditor    = el('tabFrameEditor');
 
 // ─── Frame Editor DOM refs ────────────────────────────────────────────────────
-const frameEditorSection    = document.getElementById('frameEditorSection');
-const frameEditorIndexBadge = document.getElementById('frameEditorIndexBadge');
-const frameEditorDelayBadge = document.getElementById('frameEditorDelayBadge');
-const frameWandControls     = document.getElementById('frameWandControls');
-const frameTolerance        = document.getElementById('frameTolerance');
-const frameToleranceVal     = document.getElementById('frameToleranceVal');
-const frameEraserControls   = document.getElementById('frameEraserControls');
-const frameBrushSize        = document.getElementById('frameBrushSize');
-const frameBrushSizeVal     = document.getElementById('frameBrushSizeVal');
-const frameUndoBtn          = document.getElementById('frameUndoBtn');
-const frameApplyAllBtn      = document.getElementById('frameApplyAllBtn');
-const frameResetBtn         = document.getElementById('frameResetBtn');
-const frameDeleteBtn        = document.getElementById('frameDeleteBtn');
-const frameRestoreBtn       = document.getElementById('frameRestoreBtn');
-const frameEditorWrap       = document.getElementById('frameEditorWrap');
-const frameEditorCanvas     = document.getElementById('frameEditorCanvas');
-const framePrevBtn          = document.getElementById('framePrevBtn');
-const frameNextBtn          = document.getElementById('frameNextBtn');
-const frameCounterNav       = document.getElementById('frameCounterNav');
-const frameFilmstrip        = document.getElementById('frameFilmstrip');
-const frameFilmstripCount   = document.getElementById('frameFilmstripCount');
-const frameChooseAnotherBtn = document.getElementById('frameChooseAnotherBtn');
-const frameEditorExportBtn  = document.getElementById('frameEditorExportBtn');
-const frameZoomOutBtn       = document.getElementById('frameZoomOutBtn');
-const frameZoomInBtn        = document.getElementById('frameZoomInBtn');
-const frameZoomVal          = document.getElementById('frameZoomVal');
+const frameEditorSection    = el('frameEditorSection');
+const frameEditorIndexBadge = el('frameEditorIndexBadge');
+const frameEditorDelayBadge = el('frameEditorDelayBadge');
+const frameDelayInput = el('frameDelayInput');
+const frameWandControls     = el('frameWandControls');
+const frameTolerance        = el('frameTolerance');
+const frameToleranceVal     = el('frameToleranceVal');
+const frameEraserControls   = el('frameEraserControls');
+const frameBrushSize        = el('frameBrushSize');
+const frameBrushSizeVal     = el('frameBrushSizeVal');
+const frameUndoBtn          = el('frameUndoBtn');
+const frameApplyAllBtn      = el('frameApplyAllBtn');
+const frameResetBtn         = el('frameResetBtn');
+const frameDeleteBtn        = el('frameDeleteBtn');
+const frameRestoreBtn       = el('frameRestoreBtn');
+const frameEditorWrap       = el('frameEditorWrap');
+const frameEditorCanvas     = el('frameEditorCanvas');
+const framePrevBtn          = el('framePrevBtn');
+const frameNextBtn          = el('frameNextBtn');
+const frameCounterNav       = el('frameCounterNav');
+const frameFilmstrip        = el('frameFilmstrip');
+const frameFilmstripCount   = el('frameFilmstripCount');
+const frameChooseAnotherBtn = el('frameChooseAnotherBtn');
+const frameEditorExportBtn  = el('frameEditorExportBtn');
+const frameZoomOutBtn       = el('frameZoomOutBtn');
+const frameZoomInBtn        = el('frameZoomInBtn');
+const frameZoomVal          = el('frameZoomVal');
 
 let gifFrames = [];
 let deletedFramesStack = [];
@@ -100,308 +109,78 @@ let currentFrameTool = 'wand';
 let isErasingOnFrame = false;
 let lastWandPoint = null;
 let lastProcessedFrames = null;
-let currentZoom = 'fit'; // 'fit' or number
+let currentZoom: string | number = 'fit'; // 'fit' or number
 let zoomNumeric = 1;
 let isSpacePressed = false;
 let isPanning = false;
 let panStartX = 0, panStartY = 0, scrollStartX = 0, scrollStartY = 0;
 
 // ─── Image to GIF DOM refs ─────────────────────────────────────────────
-const tabImgToGif       = document.getElementById('tabImgToGif');
-const imgToGifControls  = document.getElementById('imgToGifControls');
-const img2gifModeOriginalBtn = document.getElementById('img2gifModeOriginal');
-const img2gifModeMultiBtn = document.getElementById('img2gifModeMulti');
-const img2gifOriginalMode = document.getElementById('img2gifOriginalMode');
-const img2gifMultiMode   = document.getElementById('img2gifMultiMode');
-const img2gifOriginalThumb = document.getElementById('img2gifOriginalThumb');
-const img2gifOriginalName  = document.getElementById('img2gifOriginalName');
-const img2gifOriginalDims  = document.getElementById('img2gifOriginalDims');
-const img2gifOriginalPreviewCard = document.getElementById('img2gifOriginalPreviewCard');
-const img2gifNoOriginal    = document.getElementById('img2gifNoOriginal');
+const tabImgToGif       = el('tabImgToGif');
+const imgToGifControls  = el('imgToGifControls');
+const img2gifModeOriginalBtn = el('img2gifModeOriginal');
+const img2gifModeMultiBtn = el('img2gifModeMulti');
+const img2gifOriginalMode = el('img2gifOriginalMode');
+const img2gifMultiMode   = el('img2gifMultiMode');
+const img2gifOriginalThumb = el('img2gifOriginalThumb');
+const img2gifOriginalName  = el('img2gifOriginalName');
+const img2gifOriginalDims  = el('img2gifOriginalDims');
+const img2gifOriginalPreviewCard = el('img2gifOriginalPreviewCard');
+const img2gifNoOriginal    = el('img2gifNoOriginal');
 let img2gifCurrentMode = 'original';
-const img2gifFileInput  = document.getElementById('img2gifFileInput');
-const img2gifDropZone   = document.getElementById('img2gifDropZone');
-const img2gifThumbList  = document.getElementById('img2gifThumbList');
-const img2gifDelaySlider= document.getElementById('img2gifDelaySlider');
-const img2gifDelayVal   = document.getElementById('img2gifDelayVal');
-const img2gifClearBtn   = document.getElementById('img2gifClearBtn');
-const img2gifChooseAnotherBtn = document.getElementById('img2gifChooseAnotherBtn');
-const img2gifConvertBtn = document.getElementById('img2gifConvertBtn');
-const img2gifCanvas     = document.getElementById('img2gifCanvas');
-const img2gifCustomSizeWrap = document.getElementById('img2gifCustomSizeWrap');
+const img2gifFileInput  = el('img2gifFileInput');
+const img2gifDropZone   = el('img2gifDropZone');
+const img2gifThumbList  = el('img2gifThumbList');
+const img2gifDelaySlider= el('img2gifDelaySlider');
+const img2gifDelayVal   = el('img2gifDelayVal');
+const img2gifClearBtn   = el('img2gifClearBtn');
+const img2gifChooseAnotherBtn = el('img2gifChooseAnotherBtn');
+const img2gifConvertBtn = el('img2gifConvertBtn');
+const img2gifCanvas     = el('img2gifCanvas');
+const img2gifCustomSizeWrap = el('img2gifCustomSizeWrap');
 let img2gifImages = []; // Array of {file, dataUrl, img}
 
 // ─── Video to GIF DOM refs ────────────────────────────────────────────────────
-const tabVideoToGif       = document.getElementById('tabVideoToGif');
-const videoToGifControls  = document.getElementById('videoToGifControls');
-const tabMuteVideo        = document.getElementById('tabMuteVideo');
-const muteVideoControls   = document.getElementById('muteVideoControls');
-const videoToGifFileName  = document.getElementById('videoToGifFileName');
-const videoToGifFps       = document.getElementById('videoToGifFps');
-const videoToGifFpsVal    = document.getElementById('videoToGifFpsVal');
-const videoToGifLoop      = document.getElementById('videoToGifLoop');
-const videoToGifConvertBtn = document.getElementById('videoToGifConvertBtn');
-const videoChooseAnotherBtn = document.getElementById('videoChooseAnotherBtn');
-const videoToGifCanvas    = document.getElementById('videoToGifCanvas');
-const videoPlayer         = document.getElementById('videoPlayer');
-const originalWrap        = document.getElementById('originalWrap');
-const videoToGifCustomRange = document.getElementById('videoToGifCustomRange');
-const videoToGifStartTime   = document.getElementById('videoToGifStartTime');
-const videoToGifEndTime     = document.getElementById('videoToGifEndTime');
-const videoToGifEstimate    = document.getElementById('videoToGifEstimate');
+const tabVideoToGif       = el('tabVideoToGif');
+const videoToGifControls  = el('videoToGifControls');
+const tabEditVideo        = el('tabEditVideo');
+const editVideoControls   = el('editVideoControls');
+const tabMuteVideo        = el('tabMuteVideo');
+const muteVideoControls   = el('muteVideoControls');
+const videoToGifFileName  = el('videoToGifFileName');
+const videoToGifFps       = el('videoToGifFps');
+const videoToGifFpsVal    = el('videoToGifFpsVal');
+const videoToGifLoop      = el('videoToGifLoop');
+const videoToGifConvertBtn = el('videoToGifConvertBtn');
+const videoChooseAnotherBtn = el('videoChooseAnotherBtn');
+const videoToGifCanvas    = el('videoToGifCanvas');
+const videoPlayer         = el('videoPlayer');
+const originalWrap        = el('originalWrap');
+const videoToGifCustomRange = el('videoToGifCustomRange');
+const videoToGifStartTime   = el('videoToGifStartTime');
+const videoToGifEndTime     = el('videoToGifEndTime');
+const videoToGifEstimate    = el('videoToGifEstimate');
 let videoToGifFile = null;
 let videoToGifUrl = null;
+let editedVideoBlobUrl = null;
+let editedVideoName = '';
+let editVideoClips: File[] = [];
+let editVideoMode: 'trim' | 'join' = 'trim';
 
-const bgControls        = document.getElementById('bgControls');
-const mainActions       = document.getElementById('mainActions');
+const bgControls        = el('bgControls');
+const mainActions       = el('mainActions');
 let currentTab = 'bgRemove';
+let transformSource = { width: 0, height: 0 };
+let activeJob = null;
+let batchFiles = [];
+let staticResultType = 'image/png';
 
 // ─── i18n ─────────────────────────────────────────────────────────────────────
-const LANGS = {
-  en: { flag: 'https://flagcdn.com/w20/gb.png', flag2x: 'https://flagcdn.com/w40/gb.png', name: 'English' },
-  vi: { flag: 'https://flagcdn.com/w20/vn.png', flag2x: 'https://flagcdn.com/w40/vn.png', name: 'Ti\u1EBFng Vi\u1EC7t' },
-};
-
-const I18N = {
-  en: {
-    heroTitle: 'All-in-One Image, GIF & Video Processing',
-    heroSub: 'Background Removal \xB7 Frame-by-frame Editor \xB7 Video to GIF \xB7 Mute Video \xB7 100% Local',
-    tabBgRemove: 'Remove Background', tabFrameEditor: 'Frame Editor',
-    tabImgToGif: 'Images to GIF', tabVideoToGif: 'Video to GIF', tabMuteVideo: 'Mute Video',
-    dropTitle: 'Drag & drop image, GIF, or video here', dropSub: 'or',
-    browseBtn: 'Choose Image / GIF / Video',
-    dropInfo: 'Supports JPG, PNG, WEBP, GIF, MP4, WebM, MOV \xB7 Processed right in your browser',
-    previewOriginal: 'Original', previewResult: 'Result',
-    originalWrapTitle: 'Click on trapped background area to remove',
-    manualSeedHintText: 'Click on enclosed background areas to remove manually',
-    placeholderBgRemove: 'Click <strong>Remove Background</strong> to see result',
-    placeholderImgToGif: 'Click <strong>Create GIF</strong> to see result',
-    placeholderVideoToGif: 'Click <strong>Convert Video to GIF</strong> to see result',
-    placeholderMuteVideo: 'Click <strong>Mute Video</strong> to see result',
-    bgColorLabel: 'Background color to remove',
-    eyedropBtnTitle: 'Pick color from image', eyedropBtn: 'Pick Color',
-    eyedropHint: 'Click on original image to pick background color',
-    toleranceLabel: 'Tolerance:', tolerancePrecise: 'Precise', toleranceWider: 'Wider',
-    featherLabel: 'Feather edge:', featherSharp: 'Sharp', featherSmooth: 'Smooth',
-    speedLabel: 'GIF Speed:', speedSlow: 'Slow', speedFast: 'Fast',
-    compressLabel: 'Compress GIF:', compressHighQuality: 'High Quality', compressSmallSize: 'Small Size',
-    compressHint: '100% size \xB7 Maximum quality (recommended for white/solid backgrounds)',
-    compressLabels: [
-      ['No compression', '100% size \xB7 Maximum quality'],
-      ['Light', '100% size \xB7 Light color compression \xB7 ~70\u201380% file size'],
-      ['Medium', 'Scale 75% \xB7 Good quality \xB7 ~40\u201350% file size'],
-      ['Heavy', 'Scale 50% \xB7 Drop 1/2 frames \xB7 ~15\u201325% file size'],
-      ['Maximum', 'Scale 50% \xB7 Drop 2/3 frames \xB7 Smallest possible'],
-    ],
-    chooseAnotherFile: 'Choose another file',
-    processBtnText: 'Remove Background', processBtnTextImg: 'Remove Image Background', processBtnTextGif: 'Remove GIF Background',
-    animEffectLabel: 'Effect',
-    effectWobble: 'Wobble', effectPulse: 'Pulse', effectBounce: 'Bounce', effectSpin: 'Spin', effectFloat: 'Float',
-    animIntensityLabel: 'Intensity:', animIntensityMild: 'Mild', animIntensityStrong: 'Strong',
-    img2gifModeOriginal: '📷 From Original Image',
-    img2gifModeMulti: '🖼️ Add Multiple Images',
-    img2gifNoOriginalHint: 'No image loaded. Please load a static image (PNG / JPG) first.',
-    img2gifModeOriginal: '📷 From Original Image',
-    img2gifModeMulti: '🖼️ Add Multiple Images',
-    img2gifNoOriginalHint: 'No image loaded. Please load a static image (PNG / JPG) first.',
-    img2gifDropTitle: 'Drag & drop multiple images here',
-    img2gifDropSub: 'Supports PNG, JPG, JPEG, WEBP, BMP...',
-    img2gifBrowseBtn: 'Choose Images', img2gifDelayLabel: 'Delay per image:', img2gifSizeLabel: 'Export Size',
-    img2gifSizeOriginal: 'Original', img2gifSizeHalf: 'Scale 50%', img2gifSizeCustom: 'Custom',
-    img2gifWidthPlaceholder: 'Width (px)', img2gifHeightPlaceholder: 'Height (px)',
-    img2gifQualityLabel: 'GIF Quality', qualityHigh: 'High', qualityMedium: 'Medium',
-    qualityLowLight: 'Low (Light)', qualityLowFast: 'Low (Fast)', infiniteLoop: 'Infinite Loop',
-    img2gifClearBtn: 'Clear All', img2gifConvertBtn: 'Create GIF from Images',
-    img2gifSelectedHint: 'images selected \u2014 drag to reorder',
-    videoFpsLabel: 'Frame Rate (FPS):', videoFpsLight: 'Light (5\u20138)', videoFpsRecommended: 'Recommended (10)', videoFpsSmooth: 'Smooth (20)',
-    videoSizeLabel: 'Export Size',
-    videoSize30: 'Scale 30% (~240p \xB7 Ultra light)', videoSize50: 'Scale 50% (~380p \xB7 Standard)', videoSizeOrig: 'Original (Very heavy)',
-    videoDurationLabel: 'Video Segment (Duration)',
-    videoDurationAll: 'Entire video', videoDuration3: 'First 3 seconds', videoDuration5: 'First 5 seconds', videoDurationCustom: 'Custom range',
-    videoRangeFrom: 'From:', videoRangeTo: 's to:', videoColorLabel: 'GIF Color Quality',
-    videoConvertBtn: 'Convert Video to GIF',
-    muteLabel: 'Remove all audio tracks from video', muteBtn: 'Mute Video',
-    frameWandTool: '\uD83E\uDE84 Wand (Click area)', frameEraserTool: '\uD83D\uDD8C\uFE0F Eraser',
-    frameBrushSizeLabel: 'Brush Size:',
-    frameUndoBtn: 'Undo Erase', frameUndoTitle: 'Undo background erase action (Ctrl+Z)',
-    frameRestoreBtn: 'Restore Frame', frameRestoreTitle: 'Restore last deleted frame in timeline (Ctrl+Shift+Z)',
-    toastNoDeletedFrames: 'No deleted frames to restore!',
-    frameApplyAllBtn: '\uD83C\uDF10 Apply to All Frames', frameApplyAllTitle: 'Erase this color at same position across ALL frames',
-    frameResetBtn: 'Reset Frame', frameResetTitle: 'Restore this frame',
-    frameDeleteBtn: 'Delete Frame', frameDeleteTitle: 'Delete current frame (Delete key)',
-    toastFrameDeleted: 'Frame #{idx} deleted.', toastFrameDeleteUndo: 'Frame #{idx} restored.',
-    toastMinFramesError: 'GIF must have at least 1 frame!',
-    frameZoomTitle: 'Zoom:', frameZoomOutTitle: 'Zoom out (\u2212)', frameZoomInTitle: 'Zoom in (+)',
-    frameZoomFit: 'Fit View', frameZoomFitTitle: 'Auto fit to screen', frameZoomOrigTitle: 'Original size 100%',
-    frameZoomTip: '\uD83D\uDCA1 Select <strong>Fit View</strong> or <strong>200%\u2013300%</strong> to easily edit fine details',
-    framePrevBtn: '\u25C4 Prev Frame', framePrevBtnTitle: 'Previous frame (Left arrow)',
-    frameNextBtn: 'Next Frame \u25BA', frameNextBtnTitle: 'Next frame (Right arrow)',
-    frameEditorTip: '\uD83D\uDCA1 <strong>Tip:</strong> Click on color area to erase. Hold <strong>Space</strong> and drag to pan when zoomed in.',
-    frameFilmstripTitle: 'Frames timeline (Click frame to edit):',
-    frameExportBtn: 'Re-create GIF from Edited Frames',
-    progressLabelDefault: 'Processing frames...',
-    successBgRemoved: 'Background removed successfully!',
-    successImgToGif: 'GIF created successfully!', successVideoToGif: 'Video converted to GIF!',
-    successMuted: 'Audio removed successfully!', successFrameExport: 'GIF updated successfully!',
-    downloadResult: 'Download Result', downloadImage: 'Download Image', downloadGif: 'Download GIF',
-    downloadMutedVideo: 'Download Muted Video', downloadEditedGif: 'Download Edited GIF',
-    feat1Title: '100% Private', feat1Desc: 'All processing runs entirely in your browser. No files are ever uploaded to any server \u2014 your data stays yours.',
-    feat2Title: 'Instant Processing', feat2Desc: 'Optimized frame-by-frame algorithms deliver results in seconds, even for large GIFs and long video clips.',
-    feat3Title: 'Precise Controls', feat3Desc: 'Dial in the exact result with adjustable tolerance, edge feathering, manual seed points, and compression levels.',
-    feat4Title: 'Multi-Format Support', feat4Desc: 'Works with JPG, PNG, WEBP, GIF, MP4, WebM and MOV. Edit frames, convert to GIF, or remove audio \u2014 all in one place.',
-    feat5Title: 'Export Ready', feat5Desc: 'Download transparent GIFs, optimized images, muted videos, or animated effects instantly \u2014 no account or sign-up needed.',
-    footerText: 'MediaStudio \xB7 100% Client-Side \xB7 No Internet Connection Required',
-    toastSelectValidFile: 'Please select an image, GIF, or video file!',
-    toastSeedAdded: 'Added erase point!', toastColorSelected: 'Selected color {hex}',
-    toastLoadedFrames: 'Loaded {count} frames!', toastErrorGif: 'Error reading GIF: {err}',
-    toastLoadedImage: 'Image loaded successfully!', toastErrorImage: 'Error reading image!',
-    toastBgRemoved: 'Background removed successfully! \uD83C\uDF89',
-    toastDropImagesOnly: 'Please drop image files!',
-    toastAtLeastOneImage: 'Please load a static image first!', toastAtLeastOneImage: 'Please load a static image first!', toastAtLeastTwoImages: 'Please add at least 2 images!',
-    toastGifCreated: 'GIF created successfully! \uD83C\uDF89',
-    toastErrorCreateGif: 'Error creating GIF: {err}',
-    toastLoadedVideo: 'Video loaded successfully!', toastVideoNotSupported: 'Browser does not support this video format.',
-    toastSelectVideoFirst: 'Please select a video first!',
-    toastVideoToGifSuccess: 'Converted video to GIF successfully! \uD83C\uDF89',
-    toastVideoToGifError: 'Error converting video: {err}',
-    toastMuteSuccess: 'Audio removed successfully! \uD83C\uDF89', toastMuteError: 'Error removing audio: {err}',
-    toastGifLargeWarning: 'GIF larger than 1MB ({size}). Increase compression to reduce size!',
-    toastGifEncodeError: 'Error encoding GIF: {err}',
-    toastNoUndo: 'Nothing to undo on this frame!', toastUndid: 'Undid action on this frame!',
-    toastFrameReset: 'Reset this frame to original!',
-    toastClickPointFirst: 'Please click to erase an area on the frame first, then Apply to All Frames!',
-    toastApplyAllSuccess: 'Applied area erase at ({x}, {y}) across all {count} frames! \uD83C\uDF89',
-    toastNoFramesToExport: 'No frames to export!',
-    toastExportSuccess: 'Exported GIF from edited frames successfully! \uD83C\uDF89',
-    toastExportError: 'Error exporting GIF: {err}',
-    reading: 'reading...', framesCount: 'frames', readingVideo: 'reading video...', secondsUnit: 'seconds',
-    videoEstimate: '\u26A1 Estimated: ~{frames} frames ({w}\xD7{h}px \xB7 ~{size})',
-    confirmManyFrames: 'This video will generate {count} frames and may take a while. Continue?',
-    encodingFrames: 'Encoding {count} frames...', preparingFrame: 'Preparing frame {i} / {total}',
-    extractingFrame: 'Extracting frame {i}/{total}', processingFrame: 'Processing frame {i} / {total}',
-    processingImage: 'Processing image...', preparingVideo: 'Preparing video file...',
-    loadingVideo: 'Loading video into memory...', removingAudio: 'Removing audio from video...',
-    finalizingVideo: 'Finalizing video...', preparingFrames: 'Preparing frames...',
-    preparing: 'Preparing...', processing: 'Processing...', creating: 'Creating frames...', combining: 'Combining GIF...',
-  },
-  vi: {
-    heroTitle: 'X\u1EED l\xFD \u1EA2nh, GIF & Video \u0111a n\u0103ng tr\xEAn tr\xECnh duy\u1EC7t',
-    heroSub: 'X\xF3a n\u1EC1n \xB7 S\u1EEDa t\u1EEDng frame \xB7 Video sang GIF \xB7 T\u1EAFt ti\u1EBFng video \xB7 100% Local',
-    tabBgRemove: 'X\xF3a n\u1EC1n', tabFrameEditor: 'S\u1EEDa t\u1EEDng Frame',
-    tabImgToGif: '\u1EA2nh sang GIF', tabVideoToGif: 'Video sang GIF', tabMuteVideo: 'X\xF3a \xE2m thanh',
-    dropTitle: 'K\xE9o th\u1EA3 file \u1EA3nh, GIF ho\u1EB7c video v\xE0o \u0111\xE2y', dropSub: 'ho\u1EB7c',
-    browseBtn: 'Ch\u1ECDn file \u1EA2nh/GIF/Video',
-    dropInfo: 'H\u1ED7 tr\u1EE3 JPG, PNG, WEBP, GIF, MP4, WebM, MOV \xB7 X\u1EED l\xFD ngay tr\xEAn m\xE1y b\u1EA1n',
-    previewOriginal: 'G\u1ED1c', previewResult: 'K\u1EBFt qu\u1EA3',
-    originalWrapTitle: 'Click v\xE0o v\xF9ng n\u1EC1n b\u1ECB k\u1EB9t \u0111\u1EC3 x\xF3a',
-    manualSeedHintText: 'Click v\xE0o v\xF9ng n\u1EC1n l\u1ECDt th\u1ECDm \u0111\u1EC3 x\xF3a th\u1EE7 c\xF4ng',
-    placeholderBgRemove: 'Nh\u1EA5n <strong>X\xF3a n\u1EC1n</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
-    placeholderImgToGif: 'Nh\u1EA5n <strong>Chuy\u1EC3n sang GIF</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
-    placeholderVideoToGif: 'Nh\u1EA5n <strong>Chuy\u1EC3n video sang GIF</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
-    placeholderMuteVideo: 'Nh\u1EA5n <strong>X\xF3a \xE2m thanh</strong> \u0111\u1EC3 xem k\u1EBFt qu\u1EA3',
-    bgColorLabel: 'M\xE0u n\u1EC1n c\u1EA7n x\xF3a',
-    eyedropBtnTitle: 'Ch\u1ECDn m\xE0u t\u1EEB \u1EA3nh', eyedropBtn: 'H\xFAt m\xE0u',
-    eyedropHint: 'Nh\u1EA5p v\xE0o \u1EA3nh g\u1ED1c \u0111\u1EC3 ch\u1ECDn m\xE0u n\u1EC1n',
-    toleranceLabel: '\u0110\u1ED9 nh\u1EA1y:', tolerancePrecise: 'Ch\xEDnh x\xE1c', toleranceWider: 'R\u1ED9ng h\u01A1n',
-    featherLabel: 'L\xE0m m\u1EC1m vi\u1EC1n:', featherSharp: 'S\u1EAFc n\xE9t', featherSmooth: 'M\u1EC1m m\u1EA1i',
-    speedLabel: 'T\u1ED1c \u0111\u1ED9 GIF:', speedSlow: 'Ch\u1EADm', speedFast: 'Nhanh',
-    compressLabel: 'N\xE9n GIF:', compressHighQuality: 'Ch\u1EA5t l\u01B0\u1EE3ng cao', compressSmallSize: 'Dung l\u01B0\u1EE3ng nh\u1ECF',
-    compressHint: '100% k\xEDch th\u01B0\u1EDBc \xB7 Ch\u1EA5t l\u01B0\u1EE3ng t\u1ED1i \u0111a (khuy\u1EBFn ngh\u1ECB cho n\u1EC1n tr\u1EAFng/\u0111\u01A1n m\xE0u)',
-    compressLabels: [
-      ['Kh\xF4ng n\xE9n', '100% k\xEDch th\u01B0\u1EDBc \xB7 Ch\u1EA5t l\u01B0\u1EE3ng t\u1ED1i \u0111a'],
-      ['Nh\u1EB9', '100% k\xEDch th\u01B0\u1EDBc \xB7 M\xE0u \u0111\u01B0\u1EE3c n\xE9n nh\u1EB9 \xB7 ~70\u201380% dung l\u01B0\u1EE3ng'],
-      ['Trung b\xECnh', 'Thu nh\u1ECF 75% \xB7 Ch\u1EA5t l\u01B0\u1EE3ng t\u1ED1t \xB7 ~40\u201350% dung l\u01B0\u1EE3ng'],
-      ['M\u1EA1nh', 'Thu nh\u1ECF 50% \xB7 B\u1ECF 1/2 frame \xB7 ~15\u201325% dung l\u01B0\u1EE3ng'],
-      ['T\u1ED1i \u0111a', 'Thu nh\u1ECF 50% \xB7 B\u1ECF 2/3 frame \xB7 Nh\u1ECF nh\u1EA5t c\xF3 th\u1EC3'],
-    ],
-    chooseAnotherFile: 'Ch\u1ECDn file kh\xE1c',
-    processBtnText: 'X\xF3a n\u1EC1n \u1EA2nh/GIF', processBtnTextImg: 'X\xF3a n\u1EC1n \u1EA2nh', processBtnTextGif: 'X\xF3a n\u1EC1n GIF',
-    animEffectLabel: 'Hi\u1EC7u \u1EE9ng (Effect)',
-    effectWobble: 'L\u1EAFc l\u01B0', effectPulse: 'Nh\u1ECBp tim', effectBounce: 'N\u1EA3y l\xEAn', effectSpin: 'Xoay tr\xF2n', effectFloat: 'Bay b\u1ED5ng',
-    animIntensityLabel: 'Bi\xEAn \u0111\u1ED9 (Intensity):', animIntensityMild: 'Nh\u1EB9', animIntensityStrong: 'M\u1EA1nh',
-    img2gifDropTitle: 'K\xE9o th\u1EA3 nhi\u1EC1u \u1EA3nh v\xE0o \u0111\xE2y',
-    img2gifDropSub: 'H\u1ED7 tr\u1EE3 PNG, JPG, JPEG, WEBP, BMP...',
-    img2gifBrowseBtn: 'Ch\u1ECDn \u1EA3nh', img2gifDelayLabel: 'T\u1ED1c \u0111\u1ED9 m\u1ED7i \u1EA3nh:', img2gifSizeLabel: 'K\xEDch th\u01B0\u1EDBc xu\u1EA5t',
-    img2gifSizeOriginal: 'Gi\u1EEF nguy\xEAn', img2gifSizeHalf: 'Thu nh\u1ECF 50%', img2gifSizeCustom: 'Tu\u1EF3 ch\u1EC9nh',
-    img2gifWidthPlaceholder: 'R\u1ED9ng (px)', img2gifHeightPlaceholder: 'Cao (px)',
-    img2gifQualityLabel: 'Ch\u1EA5t l\u01B0\u1EE3ng GIF', qualityHigh: 'Cao', qualityMedium: 'Trung b\xECnh',
-    qualityLowLight: 'Th\u1EA5p (Nh\u1EB9)', qualityLowFast: 'Th\u1EA5p (Nhanh)', infiniteLoop: 'L\u1EB7p v\xF4 h\u1EA1n',
-    img2gifClearBtn: 'X\xF3a t\u1EA5t c\u1EA3', img2gifConvertBtn: 'T\u1EA1o GIF t\u1EEB \u1EA3nh',
-    img2gifSelectedHint: '\u1EA3nh \u0111\xE3 ch\u1ECDn \u2014 k\xE9o \u0111\u1EC3 s\u1EAFp x\u1EBFp l\u1EA1i',
-    videoFpsLabel: 'T\u1ED1c \u0111\u1ED9 khung h\xECnh (FPS):',
-    videoFpsLight: 'Nh\u1EB9 (5\u20138)', videoFpsRecommended: 'Khuy\xEAn d\xF9ng (10)', videoFpsSmooth: 'M\u01B0\u1EE3t (20)',
-    videoSizeLabel: 'K\xEDch th\u01B0\u1EDBc xu\u1EA5t',
-    videoSize30: 'Thu nh\u1ECF 30% (~240p \xB7 Si\xEAu nh\u1EB9)', videoSize50: 'Thu nh\u1ECF 50% (~380p \xB7 Chu\u1EA9n)', videoSizeOrig: 'Gi\u1EEF nguy\xEAn (R\u1EA5t n\u1EB7ng)',
-    videoDurationLabel: '\u0110o\u1EA1n video chuy\u1EC3n \u0111\u1ED5i (Th\u1EDDi l\u01B0\u1EE3ng)',
-    videoDurationAll: 'To\xE0n b\u1ED9 video', videoDuration3: '3 gi\xE2y \u0111\u1EA7u', videoDuration5: '5 gi\xE2y \u0111\u1EA7u', videoDurationCustom: 'T\xF9y ch\u1EC9nh gi\xE2y',
-    videoRangeFrom: 'T\u1EEB:', videoRangeTo: 's \u0111\u1EBFn:', videoColorLabel: 'Ch\u1EA5t l\u01B0\u1EE3ng m\xE0u GIF',
-    videoConvertBtn: 'Chuy\u1EC3n video sang GIF',
-    muteLabel: 'X\xF3a to\xE0n b\u1ED9 \xE2m thanh kh\u1ECFi video', muteBtn: 'X\xF3a \xE2m thanh',
-    frameWandTool: '\uD83E\uDE84 Click x\xF3a v\xF9ng', frameEraserTool: '\uD83D\uDD8C\uFE0F B\xFAt t\u1EA9y',
-    frameBrushSizeLabel: 'C\u1EE1 c\u1ECD:',
-    frameUndoBtn: 'Ho\xE0n t\xE1c', frameUndoTitle: 'Ho\xE0n t\xE1c thao t\xE1c v\u1EEBa r\u1ED3i (Ctrl+Z)',
-    frameApplyAllBtn: '\uD83C\uDF10 \xC1p d\u1EE5ng cho m\u1ECDi Frame', frameApplyAllTitle: 'X\xF3a v\xF9ng m\xE0u n\xE0y \u1EDF c\xF9ng t\u1ECDa \u0111\u1ED9 tr\xEAn T\u1EA4T C\u1EA2 c\xE1c frame',
-    frameResetBtn: 'Kh\xF4i ph\u1EE5c frame', frameResetTitle: 'Kh\xF4i ph\u1EE5c l\u1EA1i frame n\xE0y',
-    frameZoomTitle: 'Thu ph\xF3ng:', frameZoomOutTitle: 'Thu nh\u1ECF (\u2212)', frameZoomInTitle: 'Ph\xF3ng to (+)',
-    frameZoomFit: 'To v\u1EEDa khung', frameZoomFitTitle: 'T\u1EF1 \u0111\u1ED9ng ph\xF3ng to v\u1EEDa khung m\xE0n h\xECnh', frameZoomOrigTitle: 'K\xEDch th\u01B0\u1EDBc g\u1ED1c 100%',
-    frameZoomTip: '\uD83D\uDCA1 Ch\u1ECDn <strong>To v\u1EEDa khung</strong> ho\u1EB7c <strong>200%\u2013300%</strong> \u0111\u1EC3 click x\xF3a c\xE1c chi ti\u1EBFt nh\u1ECF',
-    framePrevBtn: '\u25C4 Frame tr\u01B0\u1EDBc', framePrevBtnTitle: 'Frame tr\u01B0\u1EDBc (Ph\xEDm \u2190)',
-    frameNextBtn: 'Frame sau \u25BA', frameNextBtnTitle: 'Frame sau (Ph\xEDm \u2192)',
-    frameEditorTip: '\uD83D\uDCA1 <strong>M\u1EB9o:</strong> Click chu\u1ED9t v\xE0o v\xF9ng m\xE0u mu\u1ED1n x\xF3a. Gi\u1EEF ph\xEDm <strong>Space</strong> v\xE0 r\xEA chu\u1ED9t \u0111\u1EC3 k\xE9o m\xE0n h\xECnh khi ph\xF3ng to.',
-    frameFilmstripTitle: 'Danh s\xE1ch c\xE1c khung h\xECnh (Click frame \u0111\u1EC3 s\u1EEDa):',
-    frameExportBtn: 'T\u1EA1o l\u1EA1i GIF t\u1EEB c\xE1c Frame \u0111\xE3 s\u1EEDa',
-    progressLabelDefault: '\u0110ang x\u1EED l\xFD frame...',
-    successBgRemoved: 'X\xF3a n\u1EC1n th\xE0nh c\xF4ng!',
-    successImgToGif: 'T\u1EA1o GIF th\xE0nh c\xF4ng!', successVideoToGif: 'Chuy\u1EC3n video sang GIF th\xE0nh c\xF4ng!',
-    successMuted: 'X\xF3a \xE2m thanh th\xE0nh c\xF4ng!', successFrameExport: '\u0110\xE3 c\u1EADp nh\u1EADt GIF th\xE0nh c\xF4ng!',
-    downloadResult: 'T\u1EA3i xu\u1ED1ng k\u1EBFt qu\u1EA3', downloadImage: 'T\u1EA3i xu\u1ED1ng \u1EA2nh', downloadGif: 'T\u1EA3i xu\u1ED1ng GIF',
-    downloadMutedVideo: 'T\u1EA3i xu\u1ED1ng video kh\xF4ng ti\u1EBFng', downloadEditedGif: 'T\u1EA3i xu\u1ED1ng GIF \u0111\xE3 s\u1EEDa',
-    feat1Title: '100% Ri\xEAng t\u01B0', feat1Desc: 'M\u1ECDi x\u1EED l\xFD ch\u1EA1y ngay tr\xEAn tr\xECnh duy\u1EC7t. Kh\xF4ng c\xF3 file n\xE0o đ\u01B0\u1EE3c t\u1EA3i l\xEAn server \u2014 d\u1EEF li\u1EC7u lu\xF4n n\u1EB1m tr\xEAn m\xE1y b\u1EA1n.',
-    feat2Title: 'X\u1EED l\xFD t\u1EE9c th\xEC', feat2Desc: 'Thu\u1EADt to\xE1n t\u1ED1i \u01B0u cho t\u1EEDng frame, cho k\u1EBFt qu\u1EA3 trong v\xE0i gi\xE2y, k\u1EC3 c\u1EA3 GIF l\u1EDBn v\xE0 video d\xE0i.',
-    feat3Title: 'Ti\u1EC1nh ch\u1EC9nh ch\xEDnh x\xE1c', feat3Desc: '\u0110i\u1EC1u ch\u1EC9nh \u0111\u1ED9 nh\u1EA1y, l\xE0m m\u1EC1m vi\u1EC1n, ch\u1EA5m th\u1EE7 c\xF4ng v\xE0 m\u1EE9c n\xE9n \u0111\u1EC3 c\xF3 k\u1EBFt qu\u1EA3 ch\xEDnh x\xE1c nh\u1EA5t.',
-    feat4Title: 'H\u1ED7 tr\u1EE3 nhi\u1EC1u đ\u1ECBnh d\u1EA1ng', feat4Desc: 'H\u1ED7 tr\u1EE3 JPG, PNG, WEBP, GIF, MP4, WebM v\xE0 MOV. S\u1EEDa frame, chuy\u1EC3n video sang GIF, x\xF3a \xE2m thanh \u2014 t\u1EA5t c\u1EA3 trong m\u1ED9t n\u01A1i.',
-    feat5Title: 'T\u1EA3i xu\u1ED1ng ngay', feat5Desc: 'T\u1EA3i GIF trong su\u1ED1t, \u1EA3nh t\u1ED1i \u01B0u, video kh\xF4ng ti\u1EBFng hay hi\u1EC7u \u1EE9ng chuy\u1EC3n đ\u1ED9ng t\u1EE9c th\xEC \u2014 kh\xF4ng c\u1EA7n t\u1EA1o t\xE0i kho\u1EA3n.',
-    footerText: 'MediaStudio \xB7 X\u1EED l\xFD ho\xE0n to\xE0n c\u1EE5c b\u1ED9 \xB7 Kh\xF4ng c\u1EA7n k\u1EBFt n\u1ED1i internet',
-    toastSelectValidFile: 'Vui l\xF2ng ch\u1ECDn file \u1EA2nh, GIF ho\u1EB7c video!',
-    toastSeedAdded: '\u0110\xE3 ch\u1EA5m th\xEAm v\xF9ng x\xF3a!', toastColorSelected: '\u0110\xE3 ch\u1ECDn m\xE0u {hex}',
-    toastLoadedFrames: '\u0110\xE3 t\u1EA3i {count} frames!', toastErrorGif: 'L\u1ED7i \u0111\u1ECDc GIF: {err}',
-    toastLoadedImage: '\u0110\xE3 t\u1EA3i \u1EA3nh th\xE0nh c\xF4ng!', toastErrorImage: 'L\u1ED7i \u0111\u1ECDc \u1EA3nh!',
-    toastBgRemoved: '\u0110\xE3 x\xF3a n\u1EC1n xong! \uD83C\uDF89',
-    toastDropImagesOnly: 'Vui l\xF2ng th\u1EA3 file \u1EA3nh!',
-    toastAtLeastTwoImages: 'Vui l\xF2ng th\xEAm \xEDt nh\u1EA5t 2 \u1EA3nh!',
-    toastGifCreated: 'T\u1EA1o GIF th\xE0nh c\xF4ng! \uD83C\uDF89',
-    toastErrorCreateGif: 'L\u1ED7i t\u1EA1o GIF: {err}',
-    toastLoadedVideo: '\u0110\xE3 t\u1EA3i video th\xE0nh c\xF4ng!', toastVideoNotSupported: 'Tr\xECnh duy\u1EC7t kh\xF4ng h\u1ED7 tr\u1EE3 \u0111\u1ECBnh d\u1EA1ng video n\xE0y.',
-    toastSelectVideoFirst: 'H\xE3y ch\u1ECDn video tr\u01B0\u1EDBc!',
-    toastVideoToGifSuccess: 'Chuy\u1EC3n video sang GIF th\xE0nh c\xF4ng! \uD83C\uDF89',
-    toastVideoToGifError: 'L\u1ED7i chuy\u1EC3n video: {err}',
-    toastMuteSuccess: 'X\xF3a \xE2m thanh th\xE0nh c\xF4ng! \uD83C\uDF89', toastMuteError: 'L\u1ED7i x\xF3a \xE2m thanh: {err}',
-    toastGifLargeWarning: 'GIF l\u1EDBn h\u01A1n 1MB ({size}). T\u0103ng m\u1EE9c N\xE9n \u0111\u1EC3 gi\u1EA3m ti\u1EBFp!',
-    toastGifEncodeError: 'L\u1ED7i encode GIF: {err}',
-    toastNoUndo: 'Ch\u01B0a c\xF3 thao t\xE1c n\xE0o \u0111\u1EC3 ho\xE0n t\xE1c tr\xEAn frame n\xE0y!', toastUndid: '\u0110\xE3 ho\xE0n t\xE1c frame n\xE0y!',
-    toastFrameReset: '\u0110\xE3 kh\xF4i ph\u1EE5c frame n\xE0y v\u1EC1 ban \u0111\u1EA7u!',
-    toastClickPointFirst: 'H\xE3y click x\xF3a m\u1ED9t \u0111i\u1EC3m tr\xEAn frame tr\u01B0\u1EDBc, r\u1ED3i m\u1EDBi b\u1EA5m \xC1p d\u1EE5ng cho m\u1ECDi Frame!',
-    toastApplyAllSuccess: '\u0110\xE3 \xE1p d\u1EE5ng x\xF3a v\xF9ng t\u1EA1i ({x}, {y}) tr\xEAn to\xE0n b\u1ED9 {count} frame! \uD83C\uDF89',
-    toastNoFramesToExport: 'Ch\u01B0a c\xF3 frame n\xE0o \u0111\u1EC3 xu\u1EA5t!',
-    toastExportSuccess: 'Xu\u1EA5t GIF t\u1EEB c\xE1c frame \u0111\xE3 s\u1EEDa th\xE0nh c\xF4ng! \uD83C\uDF89',
-    toastExportError: 'L\u1ED7i xu\u1EA5t GIF: {err}',
-    reading: '\u0111ang \u0111\u1ECDc...', framesCount: 'khung h\xECnh', readingVideo: '\u0111ang \u0111\u1ECDc video...', secondsUnit: 'gi\xE2y',
-    videoEstimate: '\u26A1 D\u1EF1 ki\u1EBFn: ~{frames} khung h\xECnh ({w}\xD7{h}px \xB7 ~{size})',
-    confirmManyFrames: 'Video n\xE0y s\u1EBD t\u1EA1o {count} khung h\xECnh v\xE0 c\xF3 th\u1EC3 m\u1EA5t nhi\u1EC1u th\u1EDDi gian. B\u1EA1n v\u1EABn mu\u1ED1n ti\u1EBFp t\u1EE5c?',
-    encodingFrames: '\u0110ang m\xE3 h\xF3a {count} frames...', preparingFrame: 'Chu\u1EA9n b\u1ECB frame {i} / {total}',
-    extractingFrame: '\u0110ang l\u1EA5y khung h\xECnh {i}/{total}', processingFrame: 'X\u1EED l\xFD frame {i} / {total}',
-    processingImage: '\u0110ang x\u1EED l\xFD \u1EA3nh...', preparingVideo: '\u0110ang chu\u1EA9n b\u1ECB file video...',
-    loadingVideo: '\u0110ang n\u1EA1p video v\xE0o b\u1ED9 nh\u1EDB...', removingAudio: '\u0110ang x\xF3a \xE2m thanh kh\u1ECFi video...',
-    finalizingVideo: '\u0110ang ho\xE0n t\u1EA5t \u0111\xF3ng g\xF3i video...', preparingFrames: '\u0110ang chu\u1EA9n b\u1ECB c\xE1c frame...',
-    preparing: '\u0110ang chu\u1EA9n b\u1ECB...', processing: '\u0110ang x\u1EED l\xFD...', creating: '\u0110ang t\u1EA1o frame...', combining: '\u0110ang gh\xE9p file GIF...',
-  }
-};
-
 let currentLang = (function() {
   try { return localStorage.getItem('mediastudio_lang') || 'en'; } catch(e) { return 'en'; }
 })();
 
-function t(key, params) {
+function t(key, params?) {
   var dict = I18N[currentLang] || I18N.en;
   var str = (dict[key] !== undefined) ? dict[key] : ((I18N.en[key] !== undefined) ? I18N.en[key] : key);
   if (typeof str === 'string' && params) {
@@ -422,11 +201,11 @@ function applyI18nToDOM() {
   });
   document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
     var val = t(el.getAttribute('data-i18n-title'));
-    if (val) el.title = val;
+    if (val) el.setAttribute('title', val);
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
     var val = t(el.getAttribute('data-i18n-placeholder'));
-    if (val) el.placeholder = val;
+    if (val) el.setAttribute('placeholder', val);
   });
 }
 
@@ -436,8 +215,8 @@ function setLanguage(lang) {
   try { localStorage.setItem('mediastudio_lang', lang); } catch(e) {}
 
   var info = LANGS[lang] || LANGS.en;
-  var flagEl = document.getElementById('langPickerFlag');
-  var nameEl = document.getElementById('langPickerName');
+  var flagEl = el('langPickerFlag');
+  var nameEl = el('langPickerName');
   if (flagEl) {
     flagEl.src = info.flag;
     flagEl.srcset = info.flag2x + ' 2x';
@@ -449,6 +228,10 @@ function setLanguage(lang) {
   });
 
   applyI18nToDOM();
+  setEditVideoMode(editVideoMode);
+  renderEditVideoClips();
+  updateEditTrimSummary();
+  renderEditTimeline();
 
   // Dynamic compress labels
   try {
@@ -460,7 +243,7 @@ function setLanguage(lang) {
   // Update placeholder
   try {
     if (placeholderResult && resultImg.classList.contains('hidden') && resultVideo.classList.contains('hidden')) {
-      var phMap = { bgRemove:'placeholderBgRemove', imgToGif:'placeholderImgToGif', videoToGif:'placeholderVideoToGif', muteVideo:'placeholderMuteVideo' };
+      var phMap = { bgRemove:'placeholderBgRemove', imgToGif:'placeholderImgToGif', videoToGif:'placeholderVideoToGif', editVideo:'placeholderEditVideo', muteVideo:'placeholderMuteVideo' };
       var phKey = phMap[currentTab] || 'placeholderBgRemove';
       placeholderResult.innerHTML = '<p>' + t(phKey) + '</p>';
     }
@@ -484,9 +267,9 @@ function setLanguage(lang) {
 
 // ─── Language Picker Dropdown ─────────────────────────────────────────────────
 (function initLangPicker() {
-  var wrap = document.getElementById('langPickerWrap');
-  var trigger = document.getElementById('langPickerTrigger');
-  var dropdown = document.getElementById('langDropdown');
+  var wrap = el('langPickerWrap');
+  var trigger = el('langPickerTrigger');
+  var dropdown = el('langDropdown');
   if (!wrap || !trigger || !dropdown) return;
 
   trigger.addEventListener('click', function(e) {
@@ -520,16 +303,28 @@ function setLanguage(lang) {
 
 
 // ─── Tab Switching ────────────────────────────────────────────────────────────
+function setTransformSource(width, height) {
+  transformSource = { width, height };
+}
+
+function getTransform() {
+  const { width, height } = transformSource;
+  if (!width || !height) return null;
+  return { x: 0, y: 0, w: width, h: height, outW: width, outH: height };
+}
+
 function switchTab(tab) {
+  if (activeJob && currentTab !== tab) cancelProcessing(true);
   currentTab = tab;
-  [tabBgRemove, tabFrameEditor, tabImgToGif, tabVideoToGif, tabMuteVideo].forEach(t => t.classList.remove('active'));
-  [bgControls, imgToGifControls, videoToGifControls, muteVideoControls].forEach(c => c.classList.add('hidden'));
+  syncJoinPreviewVisibility();
+  [tabBgRemove, tabFrameEditor, tabImgToGif, tabVideoToGif, tabEditVideo, tabMuteVideo].forEach(t => t.classList.remove('active'));
+  [bgControls, imgToGifControls, videoToGifControls, editVideoControls, muteVideoControls].forEach(c => c.classList.add('hidden'));
   
   const isEditor = (tab === 'frameEditor');
   if (frameEditorSection) frameEditorSection.classList.toggle('hidden', !isEditor);
   if (previewRow) previewRow.style.display = isEditor ? 'none' : '';
   if (controlsPanel) controlsPanel.style.display = isEditor ? 'none' : '';
-  document.querySelector('.app-wrapper')?.classList.toggle('frame-editor-mode', isEditor);
+  q('.app-wrapper')?.classList.toggle('frame-editor-mode', isEditor);
 
   if (tab === 'frameEditor') {
     tabFrameEditor.classList.add('active');
@@ -573,6 +368,32 @@ function switchTab(tab) {
       resultImg.classList.add('hidden');
       if (placeholderResult) {
         placeholderResult.innerHTML = `<p>${t('placeholderMuteVideo')}</p>`;
+        placeholderResult.style.display = '';
+      }
+      downloadSection.classList.add('hidden');
+    }
+  } else if (tab === 'editVideo') {
+    tabEditVideo.classList.add('active');
+    editVideoControls.classList.remove('hidden');
+    uploadSection.classList.add('hidden');
+    workspace.classList.remove('hidden');
+    renderEditVideoClips();
+    updateEditTrimSummary();
+    renderEditTimeline();
+    renderJoinRuler();
+    if (editedVideoBlobUrl) {
+      resultVideo.src = editedVideoBlobUrl;
+      resultVideo.classList.remove('hidden');
+      resultImg.classList.add('hidden');
+      if (placeholderResult) placeholderResult.style.display = 'none';
+      if (successBadgeText) successBadgeText.textContent = t('editSuccessBadge');
+      downloadBtnText.textContent = t('editDownload');
+      downloadSection.classList.remove('hidden');
+    } else {
+      resultVideo.classList.add('hidden');
+      resultImg.classList.add('hidden');
+      if (placeholderResult) {
+        placeholderResult.innerHTML = `<p>${t('placeholderEditVideo')}</p>`;
         placeholderResult.style.display = '';
       }
       downloadSection.classList.add('hidden');
@@ -633,12 +454,16 @@ function configureTabsForFile(fileType) {
   tabFrameEditor.style.display = isGif ? '' : 'none';
   tabImgToGif.style.display = (!isVideo && !isGif) ? '' : 'none';
   tabVideoToGif.style.display = isVideo ? '' : 'none';
+  tabEditVideo.style.display = isVideo ? '' : 'none';
   tabMuteVideo.style.display = isVideo ? '' : 'none';
+  el('staticFormatGroup').classList.toggle('hidden', fileType !== 'image');
+  el('batchActions').classList.toggle('hidden', fileType !== 'image' || batchFiles.length < 2);
 }
 tabBgRemove.addEventListener('click', () => switchTab('bgRemove'));
 tabFrameEditor.addEventListener('click', () => switchTab('frameEditor'));
 tabImgToGif.addEventListener('click', () => switchTab('imgToGif'));
 tabVideoToGif.addEventListener('click', () => switchTab('videoToGif'));
+tabEditVideo.addEventListener('click', () => switchTab('editVideo'));
 tabMuteVideo.addEventListener('click', () => switchTab('muteVideo'));
 videoChooseAnotherBtn.addEventListener('click', resetAll);
 if (frameChooseAnotherBtn) frameChooseAnotherBtn.addEventListener('click', resetAll);
@@ -651,13 +476,29 @@ if (img2gifChooseAnotherBtn) img2gifChooseAnotherBtn.addEventListener('click', r
 ['dragleave','drop'].forEach(evt =>
   dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.remove('drag-over'); })
 );
-dropZone.addEventListener('drop', e => {
-  const file = e.dataTransfer.files[0];
-  if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) loadFile(file);
+function handleUpload(files: FileList) {
+  const selected = Array.from(files);
+  if (!selected.length) return;
+  if (selected.length > 1) {
+    if (!selected.every(file => /^image\/(png|jpeg|webp|bmp)$/.test(file.type))) {
+      showToast(currentLang === 'vi'
+        ? 'Chỉ chọn nhiều ảnh PNG, JPEG, WebP hoặc BMP.'
+        : 'Select only PNG, JPEG, WebP, or BMP images together.', 'error');
+      return;
+    }
+    batchFiles = selected;
+    loadFile(selected[0], true);
+    el('batchCount').textContent = `${selected.length} ${currentLang === 'vi' ? 'ảnh' : 'images'}`;
+    return;
+  }
+  const file = selected[0];
+  if (file.type.startsWith('image/') || file.type.startsWith('video/')) loadFile(file);
   else showToast(t('toastSelectValidFile'), 'error');
-});
+}
+dropZone.addEventListener('drop', e => handleUpload(e.dataTransfer.files));
 fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) loadFile(fileInput.files[0]);
+  handleUpload(fileInput.files);
+  fileInput.value = '';
 });
 
 // ─── Controls ─────────────────────────────────────────────────────────────────
@@ -676,7 +517,7 @@ function switchImg2gifMode(mode) {
   if (img2gifOriginalMode) img2gifOriginalMode.classList.toggle('hidden', mode !== 'original');
   if (img2gifMultiMode)    img2gifMultiMode.classList.toggle('hidden', mode !== 'multi');
   // Show/hide clear btn
-  const clearBtn = document.getElementById('img2gifClearBtn');
+  const clearBtn = el('img2gifClearBtn');
   if (clearBtn) clearBtn.style.display = mode === 'multi' ? '' : 'none';
 }
 
@@ -715,7 +556,7 @@ function updateVideoToGifEstimate() {
   let start = 0;
   let end = videoPlayer.duration;
   
-  const mode = document.querySelector('input[name="videoToGifDurationMode"]:checked')?.value || 'all';
+  const mode = q('input[name="videoToGifDurationMode"]:checked')?.value || 'all';
   if (mode === '3') {
     end = Math.min(videoPlayer.duration, 3);
   } else if (mode === '5') {
@@ -729,15 +570,16 @@ function updateVideoToGifEstimate() {
   const dur = Math.max(0.1, end - start);
   const frames = Math.ceil(dur * fps);
   
-  const sizeVal = document.querySelector('input[name="videoToGifSize"]:checked')?.value || 'original';
+  const sizeVal = q('input[name="videoToGifSize"]:checked')?.value || 'original';
   let scale = 1;
   if (sizeVal === '2') scale = 2;
   else if (sizeVal === '4') scale = 4;
   else if (sizeVal === '0.5') scale = 0.5;
   else if (sizeVal === '0.3') scale = 0.3;
   
-  const w = Math.round(videoPlayer.videoWidth * scale);
-  const h = Math.round(videoPlayer.videoHeight * scale);
+  const crop = getTransform() || { outW: videoPlayer.videoWidth, outH: videoPlayer.videoHeight };
+  const w = Math.round(crop.outW * scale);
+  const h = Math.round(crop.outH * scale);
   
   // Approximate GIF size: ~0.4 bytes per pixel per frame on average
   const estBytes = frames * (w * h * 0.42);
@@ -751,13 +593,13 @@ videoToGifFps.addEventListener('input', () => {
   videoToGifFpsVal.textContent = videoToGifFps.value;
   updateVideoToGifEstimate();
 });
-document.getElementById('videoToGifEnhance')?.addEventListener('change', updateVideoToGifEstimate);
+el('videoToGifEnhance')?.addEventListener('change', updateVideoToGifEstimate);
 document.querySelectorAll('input[name="videoToGifSize"]').forEach(r => {
   r.addEventListener('change', updateVideoToGifEstimate);
 });
 document.querySelectorAll('input[name="videoToGifDurationMode"]').forEach(r => {
   r.addEventListener('change', e => {
-    if (e.target.value === 'custom') {
+    if ((e.target as HTMLInputElement).value === 'custom') {
       videoToGifCustomRange.style.display = 'flex';
     } else {
       videoToGifCustomRange.style.display = 'none';
@@ -861,7 +703,14 @@ originalImg.addEventListener('click', e => {
 });
 
 // ─── Load File ────────────────────────────────────────────────────────────────
-function loadFile(file) {
+function loadFile(file, preserveBatch = false) {
+  if (!preserveBatch) batchFiles = [];
+  if (activeJob) cancelProcessing(true);
+  gifFrames = [];
+  deletedFramesStack = [];
+  lastProcessedFrames = null;
+  activeFrameIndex = 0;
+  setTransformSource(0, 0);
   currentFile = file;
   superGif    = null;
   isStaticImage = false;
@@ -872,7 +721,6 @@ function loadFile(file) {
   customSeeds = [];
   if (sourceBlobUrl) { URL.revokeObjectURL(sourceBlobUrl); sourceBlobUrl = null; }
   if (resultBlobUrl) { URL.revokeObjectURL(resultBlobUrl); resultBlobUrl = null; }
-  if (lastStaticProcessedUrl) { URL.revokeObjectURL(lastStaticProcessedUrl); lastStaticProcessedUrl = null; }
   if (videoToGifUrl) { URL.revokeObjectURL(videoToGifUrl); videoToGifUrl = null; }
 
   // Show workspace first
@@ -951,6 +799,7 @@ function loadFile(file) {
     superGif = new SuperGif({ gif: helperImg, auto_play: false });
     superGif.load(() => {
       frameCount = superGif.get_length();
+      setTransformSource(superGif.get_canvas().width, superGif.get_canvas().height);
       // Collect frame delays (libgif stores them internally)
       frameDelays = [];
       try {
@@ -982,6 +831,7 @@ function loadStaticImage(file, objectUrl) {
   const img = new Image();
   img.onload = () => {
     staticImgObj = img;
+    setTransformSource(img.naturalWidth, img.naturalHeight);
   updateImg2gifOriginalPreview();
     originalImg.src = objectUrl;
     originalMeta.textContent = `${file.name} · ${formatBytes(file.size)} · ${img.naturalWidth}x${img.naturalHeight}`;
@@ -1009,7 +859,7 @@ function autoDetectBgColor(canvas) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const w = canvas.width, h = canvas.height;
-  const counts = {};
+  const counts: Record<string, number> = {};
 
   // Sample entire perimeter at ~40 evenly-spaced points per edge
   const step = Math.max(1, Math.floor(Math.min(w, h) / 40));
@@ -1039,6 +889,7 @@ function autoDetectBgColor(canvas) {
 // ─── Process Static Image ─────────────────────────────────────────────────────
 async function processStaticImage() {
   if (!staticImgObj) return;
+  const job = beginJob();
 
   const tolerance = parseInt(toleranceSlider.value);
   const feather   = parseInt(featherSlider.value);
@@ -1051,6 +902,7 @@ async function processStaticImage() {
 
   // Dùng setTimeout để UI kịp update
   setTimeout(() => {
+    if (job.cancelled) return;
     const W = staticImgObj.naturalWidth;
     const H = staticImgObj.naturalHeight;
     const tmpCanvas = document.createElement('canvas');
@@ -1065,7 +917,24 @@ async function processStaticImage() {
     
     ctx.putImageData(imgData, 0, 0);
     
-    tmpCanvas.toBlob(blob => {
+    const crop = getTransform() || { x: 0, y: 0, w: W, h: H, outW: W, outH: H };
+    const outputCanvas = document.createElement('canvas');
+    outputCanvas.width = crop.outW;
+    outputCanvas.height = crop.outH;
+    const outputCtx = outputCanvas.getContext('2d');
+    const requestedType = el('staticExportFormat').value;
+    if (requestedType === 'image/jpeg') {
+      outputCtx.fillStyle = '#ffffff';
+      outputCtx.fillRect(0, 0, crop.outW, crop.outH);
+    }
+    outputCtx.drawImage(tmpCanvas, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.outW, crop.outH);
+
+    outputCanvas.toBlob(blob => {
+      if (job.cancelled) return;
+      if (!blob) { finishJob(job); progressSection.classList.add('hidden'); processBtn.disabled = false; showToast('Image export failed', 'error'); return; }
+      finishJob(job);
+      staticResultType = blob.type || 'image/png';
+      const formatFallback = staticResultType !== requestedType;
       if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
       resultBlobUrl = URL.createObjectURL(blob);
       resultImg.src = resultBlobUrl;
@@ -1079,8 +948,10 @@ async function processStaticImage() {
       downloadBtnText.textContent = 'Tải xuống Ảnh';
       downloadSection.classList.remove('hidden');
       processBtn.disabled = false;
-      showToast(t('toastBgRemoved'), 'success');
-    }, 'image/png');
+      showToast(formatFallback
+        ? (currentLang === 'vi' ? 'Trình duyệt không hỗ trợ định dạng đã chọn; đã xuất PNG.' : 'Selected format is unsupported; exported PNG.')
+        : t('toastBgRemoved'), formatFallback ? 'info' : 'success');
+    }, requestedType, requestedType === 'image/png' ? undefined : 0.9);
   }, 50);
 }
 
@@ -1094,7 +965,7 @@ async function processStaticImage() {
   img2gifDropZone.addEventListener(evt, e => { e.preventDefault(); img2gifDropZone.classList.remove('drag-over'); })
 );
 img2gifDropZone.addEventListener('drop', e => {
-  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  const files = Array.from(e.dataTransfer.files as FileList).filter(f => f.type.startsWith('image/'));
   if (files.length) addImg2gifFiles(files);
   else showToast(t('toastDropImagesOnly'), 'error');
 });
@@ -1107,7 +978,7 @@ img2gifFileInput.addEventListener('change', () => {
 // Size radio toggle
 document.querySelectorAll('input[name="img2gifSize"]').forEach(r => {
   r.addEventListener('change', () => {
-    img2gifCustomSizeWrap.style.display = r.value === 'custom' ? 'flex' : 'none';
+    img2gifCustomSizeWrap.style.display = (r as HTMLInputElement).value === 'custom' ? 'flex' : 'none';
   });
 });
 
@@ -1115,7 +986,7 @@ function addImg2gifFiles(files) {
   files.forEach(file => {
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const dataUrl = ev.target.result;
+      const dataUrl = String(ev.target.result);
       const img = new Image();
       img.onload = () => {
         img2gifImages.push({ file, dataUrl, img });
@@ -1135,14 +1006,14 @@ function renderImg2gifThumbs() {
     const wrap = document.createElement('div');
     wrap.className = 'img2gif-thumb';
     wrap.draggable = true;
-    wrap.dataset.idx = idx;
+    wrap.dataset.idx = String(idx);
     wrap.innerHTML = `
       <img src="${item.dataUrl}" alt="frame ${idx+1}" />
       <span class="img2gif-thumb-num">${idx + 1}</span>
       <button class="img2gif-thumb-del" data-idx="${idx}" title="Xóa">×</button>
     `;
     // Drag-to-reorder
-    wrap.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', idx); wrap.classList.add('dragging'); });
+    wrap.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', String(idx)); wrap.classList.add('dragging'); });
     wrap.addEventListener('dragend', () => wrap.classList.remove('dragging'));
     wrap.addEventListener('dragover', e => e.preventDefault());
     wrap.addEventListener('drop', e => {
@@ -1197,9 +1068,9 @@ img2gifConvertBtn.addEventListener('click', async () => {
   }
   
   const delay = parseInt(img2gifDelaySlider.value);
-  const sizeOpt = document.querySelector('input[name="img2gifSize"]:checked').value;
-  const quality = parseInt(document.querySelector('input[name="img2gifQuality"]:checked').value);
-  const loop = document.getElementById('img2gifLoop').checked ? 0 : -1;
+  const sizeOpt = q('input[name="img2gifSize"]:checked').value;
+  const quality = parseInt(q('input[name="img2gifQuality"]:checked').value);
+  const loop = el('img2gifLoop').checked ? 0 : -1;
   
   // Determine output dimensions
   const firstImg = imagesToProcess[0].img;
@@ -1208,14 +1079,15 @@ img2gifConvertBtn.addEventListener('click', async () => {
     outW = firstImg.naturalWidth;
     outH = firstImg.naturalHeight;
   } else if (sizeOpt === 'custom') {
-    outW = parseInt(document.getElementById('img2gifCustomW').value) || firstImg.naturalWidth;
-    outH = parseInt(document.getElementById('img2gifCustomH').value) || firstImg.naturalHeight;
+    outW = parseInt(el('img2gifCustomW').value) || firstImg.naturalWidth;
+    outH = parseInt(el('img2gifCustomH').value) || firstImg.naturalHeight;
   } else {
     const scale = parseFloat(sizeOpt);
     outW = Math.round(firstImg.naturalWidth * scale);
     outH = Math.round(firstImg.naturalHeight * scale);
   }
   
+  const job = beginJob();
   img2gifConvertBtn.disabled = true;
   progressSection.classList.remove('hidden');
   downloadSection.classList.add('hidden');
@@ -1229,8 +1101,9 @@ img2gifConvertBtn.addEventListener('click', async () => {
   } catch (e) {
     console.warn('Không tải được worker:', e);
   }
+  if (job.cancelled) { if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl); return; }
   
-  const gifOpts = {
+  const gifOpts: any = {
     workers: workerBlobUrl ? 4 : 0,
     quality,
     width: outW,
@@ -1239,12 +1112,15 @@ img2gifConvertBtn.addEventListener('click', async () => {
   };
   if (workerBlobUrl) gifOpts.workerScript = workerBlobUrl;
   const gif = new window.GIF(gifOpts);
+  job.gif = gif;
+  job.cleanup = () => { if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl); };
   
   img2gifCanvas.width = outW;
   img2gifCanvas.height = outH;
   const ctx = img2gifCanvas.getContext('2d');
   
   for (let i = 0; i < imagesToProcess.length; i++) {
+    if (job.cancelled) return;
     updateProgress(Math.round((i / imagesToProcess.length) * 70), `Đang xử lý ảnh ${i+1}/${imagesToProcess.length}`);
     ctx.clearRect(0, 0, outW, outH);
     ctx.drawImage(imagesToProcess[i].img, 0, 0, outW, outH);
@@ -1255,6 +1131,8 @@ img2gifConvertBtn.addEventListener('click', async () => {
   gif.on('progress', p => updateProgress(70 + Math.round(p * 29), 'Đang mã hóa GIF...'));
   
   gif.on('finished', blob => {
+    if (job.cancelled) return;
+    finishJob(job);
     if (workerBlobUrl) { URL.revokeObjectURL(workerBlobUrl); workerBlobUrl = null; }
     if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
     resultBlobUrl = URL.createObjectURL(blob);
@@ -1275,6 +1153,8 @@ img2gifConvertBtn.addEventListener('click', async () => {
   });
   
   gif.on('error', err => {
+    if (job.cancelled) return;
+    finishJob(job);
     console.error(err);
     if (workerBlobUrl) { URL.revokeObjectURL(workerBlobUrl); workerBlobUrl = null; }
     progressSection.classList.add('hidden');
@@ -1282,7 +1162,7 @@ img2gifConvertBtn.addEventListener('click', async () => {
     showToast(t('toastErrorCreateGif', { err: err?.message || err }), 'error');
   });
   
-  gif.render();
+  if (!job.cancelled) gif.render();
 });
 
 // ─── Video to GIF Feature ────────────────────────────────────────────────────
@@ -1305,12 +1185,22 @@ function setVideoToGifFile(file) {
   }
   if (videoToGifUrl) URL.revokeObjectURL(videoToGifUrl);
   videoToGifFile = file;
+  resetJoinPreview();
+  const loadToken = ++timelineLoadToken;
   currentFile = file;
+  editVideoClips = [file];
+  editClipRanges.clear();
+  editStartTime.value = '0';
+  if (editedVideoBlobUrl) URL.revokeObjectURL(editedVideoBlobUrl);
+  editedVideoBlobUrl = null;
+  editedVideoName = '';
+  renderEditVideoClips();
   videoToGifUrl = URL.createObjectURL(file);
   videoPlayer.src = videoToGifUrl;
   videoToGifFileName.textContent = `${file.name} · ${t('readingVideo')}`;
   videoToGifConvertBtn.disabled = true;
   videoPlayer.onloadedmetadata = () => {
+    setTransformSource(videoPlayer.videoWidth, videoPlayer.videoHeight);
     videoToGifFileName.textContent = `${file.name} · ${videoPlayer.videoWidth}×${videoPlayer.videoHeight} · ${videoPlayer.duration.toFixed(1)} giây`;
     originalMeta.textContent = `${file.name} · ${formatBytes(file.size)} · ${videoPlayer.videoWidth}×${videoPlayer.videoHeight} · ${videoPlayer.duration.toFixed(1)} giây`;
     if (videoToGifStartTime) videoToGifStartTime.value = '0';
@@ -1319,6 +1209,18 @@ function setVideoToGifFile(file) {
       videoToGifEndTime.max = videoPlayer.duration.toFixed(1);
     }
     videoToGifConvertBtn.disabled = false;
+    el('editVideoBtn').disabled = false;
+    el('editVideoFileName').textContent = `${file.name} · ${formatBytes(file.size)} · ${videoPlayer.duration.toFixed(1)} ${t('secondsUnit')}`;
+    el('editEndTime').value = videoPlayer.duration.toFixed(1);
+    el('editEndTime').max = videoPlayer.duration.toFixed(1);
+    el('editStartTime').max = videoPlayer.duration.toFixed(1);
+    updateEditTrimSummary();
+    renderEditTimeline();
+    loadTimelineMedia(file, 8).then(() => {
+      if (timelineLoadToken !== loadToken || videoToGifFile !== file) return;
+      renderEditTimeline();
+      renderEditVideoClips();
+    }).catch(() => {});
     updateMuteTab();
     updateVideoToGifEstimate();
     showToast(t('toastLoadedVideo'), 'success');
@@ -1326,12 +1228,13 @@ function setVideoToGifFile(file) {
   videoPlayer.onerror = () => {
     videoToGifFileName.textContent = 'Không thể đọc video này';
     videoToGifConvertBtn.disabled = true;
+    el('editVideoBtn').disabled = true;
     showToast('Trình duyệt không hỗ trợ định dạng video này.', 'error');
   };
 }
 
 function waitForVideoEvent(eventName) {
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const done = () => { videoPlayer.removeEventListener(eventName, done); videoPlayer.removeEventListener('error', fail); resolve(); };
     const fail = () => { videoPlayer.removeEventListener(eventName, done); reject(new Error('Không thể đọc khung hình video.')); };
     videoPlayer.addEventListener(eventName, done, { once: true });
@@ -1377,6 +1280,53 @@ function applySharpen(ctx, width, height, amount = 0.4) {
   }
 }
 
+const batchExportBtn = el('batchExportBtn');
+
+batchExportBtn.addEventListener('click', async () => {
+  if (batchFiles.length < 2) return;
+  const job = beginJob();
+  const files = [...batchFiles];
+  const [r, g, b] = hexToRgb(bgColorInput.value);
+  const tolerance = Number(toleranceSlider.value), feather = Number(featherSlider.value);
+  const entries = [];
+  batchExportBtn.disabled = true;
+  progressSection.classList.remove('hidden');
+  try {
+    for (let i = 0; i < files.length; i++) {
+      if (job.cancelled) return;
+      const bitmap = await createImageBitmap(files[i]);
+      if (job.cancelled) { bitmap.close(); return; }
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width; canvas.height = bitmap.height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(bitmap, 0, 0); bitmap.close();
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      removeBackground(imageData.data, r, g, b, tolerance, feather, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('PNG encoding failed');
+      if (job.cancelled) return;
+      const base = files[i].name.replace(/\.[^.]+$/, '').replace(/[\\/]/g, '_');
+      entries.push({ name: `${String(i + 1).padStart(3, '0')}_${base}_no_bg.png`, data: new Uint8Array(await blob.arrayBuffer()) });
+      updateProgress(Math.round((i + 1) / files.length * 90), `${i + 1}/${files.length}`);
+      await sleep(0);
+    }
+    if (job.cancelled) return;
+    const url = URL.createObjectURL(makeZip(entries));
+    const link = document.createElement('a');
+    link.href = url; link.download = 'backgrounds_removed.zip'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    progressSection.classList.add('hidden');
+    showToast(currentLang === 'vi' ? 'Đã tạo tệp ZIP.' : 'ZIP file created.', 'success');
+  } catch (err) {
+    if (!job.cancelled) showToast(err.message || String(err), 'error');
+    progressSection.classList.add('hidden');
+  } finally {
+    batchExportBtn.disabled = false;
+    finishJob(job);
+  }
+});
+
 videoToGifConvertBtn.addEventListener('click', async () => {
   if (!videoToGifFile || !Number.isFinite(videoPlayer.duration)) {
     showToast(t('toastSelectVideoFirst'), 'error');
@@ -1387,7 +1337,7 @@ videoToGifConvertBtn.addEventListener('click', async () => {
   // Calculate start, end, and duration
   let startTime = 0;
   let endTime = videoPlayer.duration;
-  const durationMode = document.querySelector('input[name="videoToGifDurationMode"]:checked')?.value || 'all';
+  const durationMode = q('input[name="videoToGifDurationMode"]:checked')?.value || 'all';
   if (durationMode === '3') {
     endTime = Math.min(videoPlayer.duration, 3);
   } else if (durationMode === '5') {
@@ -1402,21 +1352,28 @@ videoToGifConvertBtn.addEventListener('click', async () => {
   const frameCount = Math.ceil(duration * fps);
   if (frameCount > 1200 && !confirm(t('confirmManyFrames', { count: frameCount }))) return;
 
-  const sizeChoice = document.querySelector('input[name="videoToGifSize"]:checked')?.value || 'original';
+  const sizeChoice = q('input[name="videoToGifSize"]:checked')?.value || 'original';
   let scale = 1;
   if (sizeChoice === '2') scale = 2;
   else if (sizeChoice === '4') scale = 4;
   else if (sizeChoice === '0.5') scale = 0.5;
   else if (sizeChoice === '0.3') scale = 0.3;
-  const enhanceEnabled = document.getElementById('videoToGifEnhance')?.checked;
+  const enhanceEnabled = el('videoToGifEnhance')?.checked;
 
-  const width = Math.max(1, Math.round(videoPlayer.videoWidth * scale));
-  const height = Math.max(1, Math.round(videoPlayer.videoHeight * scale));
-  const quality = Number(document.querySelector('input[name="videoToGifQuality"]:checked').value);
+  const crop = getTransform() || { x: 0, y: 0, w: videoPlayer.videoWidth, h: videoPlayer.videoHeight, outW: videoPlayer.videoWidth, outH: videoPlayer.videoHeight };
+  const width = Math.max(1, Math.round(crop.outW * scale));
+  const height = Math.max(1, Math.round(crop.outH * scale));
+  const quality = Number(q('input[name="videoToGifQuality"]:checked').value);
+  const job = beginJob();
+  progressSection.classList.remove('hidden');
+  updateProgress(0, currentLang === 'vi' ? 'Đang chuẩn bị...' : 'Preparing...');
   const workerUrl = await getGifWorkerUrl();
-  const opts = { workers: workerUrl ? 2 : 0, quality, width, height, repeat: videoToGifLoop.checked ? 0 : -1 };
+  if (job.cancelled) { if (workerUrl) URL.revokeObjectURL(workerUrl); return; }
+  job.cleanup = () => { if (workerUrl) URL.revokeObjectURL(workerUrl); };
+  const opts: any = { workers: workerUrl ? 2 : 0, quality, width, height, repeat: videoToGifLoop.checked ? 0 : -1 };
   if (workerUrl) opts.workerScript = workerUrl;
   const gif = new window.GIF(opts);
+  job.gif = gif;
   const ctx = videoToGifCanvas.getContext('2d', { alpha: false });
   videoToGifCanvas.width = width;
   videoToGifCanvas.height = height;
@@ -1426,11 +1383,13 @@ videoToGifConvertBtn.addEventListener('click', async () => {
   downloadSection.classList.add('hidden');
   try {
     for (let i = 0; i < frameCount; i++) {
+      if (job.cancelled) return;
       const targetTime = Math.min(startTime + (i / fps), Math.max(startTime, endTime - 0.001));
       await seekVideo(targetTime);
+      if (job.cancelled) return;
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(videoPlayer, 0, 0, width, height);
+      ctx.drawImage(videoPlayer, crop.x, crop.y, crop.w, crop.h, 0, 0, width, height);
       if (enhanceEnabled) {
         applySharpen(ctx, width, height, scale >= 2 ? 0.45 : 0.35);
       }
@@ -1439,6 +1398,8 @@ videoToGifConvertBtn.addEventListener('click', async () => {
     }
     gif.on('progress', p => updateProgress(70 + Math.round(p * 30), 'Đang mã hóa GIF...'));
     gif.on('finished', blob => {
+      if (job.cancelled) return;
+      finishJob(job);
       if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
       resultBlobUrl = URL.createObjectURL(blob);
       resultVideo.classList.add('hidden');
@@ -1454,9 +1415,18 @@ videoToGifConvertBtn.addEventListener('click', async () => {
       if (workerUrl) URL.revokeObjectURL(workerUrl);
       showToast(t('toastVideoToGifSuccess'), 'success');
     });
-    gif.on('error', err => { throw err; });
-    gif.render();
+    gif.on('error', err => {
+      if (job.cancelled) return;
+      finishJob(job);
+      progressSection.classList.add('hidden');
+      videoToGifConvertBtn.disabled = false;
+      if (workerUrl) URL.revokeObjectURL(workerUrl);
+      showToast(t('toastVideoToGifError', { err: err.message || err }), 'error');
+    });
+    if (!job.cancelled) gif.render();
   } catch (err) {
+    if (job.cancelled) return;
+    finishJob(job);
     console.error(err);
     progressSection.classList.add('hidden');
     videoToGifConvertBtn.disabled = false;
@@ -1466,10 +1436,10 @@ videoToGifConvertBtn.addEventListener('click', async () => {
 });
 
 // ─── Mute Video Tab ───────────────────────────────────────────────────────────
-const muteVideoBtn       = document.getElementById('muteVideoBtn');
-const muteVideoStatus    = document.getElementById('muteVideoStatus');
-const muteVideoFileName  = document.getElementById('muteVideoFileName');
-const muteChooseAnotherBtn = document.getElementById('muteChooseAnotherBtn');
+const muteVideoBtn       = el('muteVideoBtn');
+const muteVideoStatus    = el('muteVideoStatus');
+const muteVideoFileName  = el('muteVideoFileName');
+const muteChooseAnotherBtn = el('muteChooseAnotherBtn');
 
 let ffmpegInstance = null;
 let ffmpegLoaded   = false;
@@ -1494,14 +1464,13 @@ function updateMuteTab() {
 async function loadFFmpeg() {
   if (ffmpegLoaded) return ffmpegInstance;
   if (ffmpegLoading) {
-    await new Promise(resolve => {
+    await new Promise<void>(resolve => {
       const check = setInterval(() => { if (!ffmpegLoading) { clearInterval(check); resolve(); } }, 100);
     });
+    if (!ffmpegLoaded || !ffmpegInstance) throw new Error('FFmpeg could not be loaded.');
     return ffmpegInstance;
   }
   ffmpegLoading = true;
-  muteVideoBtn.disabled = true;
-
   try {
     const { FFmpeg } = window.FFmpegWASM || {};
     const { toBlobURL } = window.FFmpegUtil || {};
@@ -1511,6 +1480,7 @@ async function loadFFmpeg() {
     ffmpegInstance = new FFmpeg();
     ffmpegInstance.on('log', ({ message }) => console.log('[FFmpeg]', message));
     ffmpegInstance.on('progress', ({ progress }) => {
+      if (currentTab === 'editVideo') return;
       if (progress > 0 && progress <= 1) {
         const pct = Math.round(progress * 100);
         updateProgress(pct, `Đang xử lý... ${pct}%`);
@@ -1525,14 +1495,777 @@ async function loadFFmpeg() {
     ffmpegLoaded = true;
     ffmpegLoading = false;
   } catch (err) {
+    ffmpegInstance?.terminate();
+    ffmpegInstance = null;
+    ffmpegLoaded = false;
     ffmpegLoading = false;
     throw err;
   }
   return ffmpegInstance;
 }
 
+const editVideoBtn = el('editVideoBtn');
+const editStartTime = el('editStartTime');
+const editEndTime = el('editEndTime');
+const editJoinInput = el('editJoinInput');
+const editClipList = el('editClipList');
+const editTimelineContent = el('editTimelineContent');
+const editTimelineTrack = el('editTimelineTrack');
+const editJoinScroll = el('editJoinScroll');
+const editJoinContent = el('editJoinContent');
+const timelineMedia = new Map<File, { duration: number; frames: string[] }>();
+const timelineMediaFailed = new Set<File>();
+const editClipRanges = new Map<File, { start: number; end: number }>();
+let editTimelineZoom = 1;
+let editJoinZoom = 1;
+let timelineLoadToken = 0;
+let draggingClipIndex = -1;
+let joinTimelinePosition = 0;
+let joinIsPlaying = false;
+let joinPreviewFile: File | null = null;
+let joinPreviewUrl: string | null = null;
+const joinPreviewVideo = document.createElement('video');
+joinPreviewVideo.playsInline = true;
+joinPreviewVideo.style.cssText = 'display:none;width:100%;height:100%;object-fit:contain;';
+originalWrap.appendChild(joinPreviewVideo);
+
+function timelineClock(seconds: number): string {
+  if (!Number.isFinite(seconds)) seconds = 0;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${(seconds % 60).toFixed(1).padStart(4, '0')}`;
+}
+
+function joinSourceDuration(): number {
+  return editVideoClips.reduce((sum, file) => sum + (timelineMedia.get(file)?.duration || 0), 0);
+}
+
+function joinSelectedEnd(): number {
+  const last = editVideoClips.at(-1);
+  if (!last) return 0;
+  return joinSourceDuration() - (timelineMedia.get(last)?.duration || 0) + (getEditClipRange(last)?.end || 0);
+}
+
+function syncJoinPreviewVisibility(): void {
+  const showJoin = currentTab === 'editVideo' && editVideoMode === 'join' && !!videoToGifFile;
+  joinPreviewVideo.style.display = showJoin ? 'block' : 'none';
+  if (videoToGifFile) videoPlayer.style.display = showJoin ? 'none' : 'block';
+  if (!showJoin) {
+    joinIsPlaying = false;
+    joinPreviewVideo.pause();
+  } else {
+    videoPlayer.pause();
+    if (!joinPreviewFile && joinSourceDuration() > 0) setJoinPosition(0);
+  }
+  updateJoinPlayButton();
+}
+
+function updateJoinPlayButton(): void {
+  const button = el('editJoinPlay');
+  button.textContent = joinIsPlaying ? 'Ⅱ' : '▶';
+  button.setAttribute('aria-label', t(joinIsPlaying ? 'editPause' : 'editJoinPlay'));
+  button.title = t(joinIsPlaying ? 'editPause' : 'editJoinPlay');
+}
+
+function updateJoinPlayhead(): void {
+  const total = joinSourceDuration();
+  let remaining = Math.min(Math.max(0, joinTimelinePosition), total);
+  let x = 12;
+  const cards = [...editClipList.children] as HTMLElement[];
+  for (let index = 0; index < editVideoClips.length; index++) {
+    const width = cards[index]?.offsetWidth || 0;
+    const duration = timelineMedia.get(editVideoClips[index])?.duration || 0;
+    if (index === editVideoClips.length - 1 || remaining <= duration) {
+      x += duration ? width * remaining / duration : 0;
+      break;
+    }
+    x += width + 4;
+    remaining -= duration;
+  }
+  const playhead = el('editJoinPlayhead');
+  playhead.style.left = `${x}px`;
+  playhead.setAttribute('aria-valuenow', joinTimelinePosition.toFixed(2));
+  playhead.setAttribute('aria-valuemax', total.toFixed(2));
+  el('editJoinCurrent').textContent = timelineClock(joinTimelinePosition);
+  el('editJoinTotal').textContent = timelineClock(total);
+}
+
+function renderJoinRuler(): void {
+  const cards = [...editClipList.children] as HTMLElement[];
+  const stripWidth = cards.reduce((sum, card) => sum + card.offsetWidth, 0) + Math.max(0, cards.length - 1) * 4;
+  editJoinContent.style.width = `${Math.max(640, stripWidth + 24)}px`;
+  const ruler = el('editJoinRuler');
+  ruler.style.width = `${stripWidth}px`;
+  ruler.replaceChildren();
+  let offsetTime = 0;
+  let offsetX = 0;
+  editVideoClips.forEach((file, index) => {
+    const duration = timelineMedia.get(file)?.duration || 0;
+    const width = cards[index]?.offsetWidth || 0;
+    if (duration && width) {
+      const candidates = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300];
+      const step = candidates.find(value => value / duration * width >= 55) || 600;
+      for (let time = 0; time < duration; time += step) {
+        const tick = document.createElement('span');
+        tick.className = 'edit-timeline-tick';
+        tick.style.left = `${offsetX + time / duration * width}px`;
+        tick.textContent = timelineClock(offsetTime + time);
+        ruler.appendChild(tick);
+      }
+    }
+    offsetTime += duration;
+    offsetX += width + (index < editVideoClips.length - 1 ? 4 : 0);
+  });
+  if (stripWidth) {
+    const lastTick = document.createElement('span');
+    lastTick.className = 'edit-timeline-tick edit-timeline-tick-last';
+    lastTick.style.left = `${stripWidth}px`;
+    lastTick.textContent = timelineClock(offsetTime);
+    ruler.appendChild(lastTick);
+  }
+  updateJoinPlayhead();
+  if (currentTab === 'editVideo' && editVideoMode === 'join' && !joinPreviewFile && joinSourceDuration() > 0) setJoinPosition(0);
+}
+
+function joinTimeAt(clientX: number): number {
+  let offset = 0;
+  const cards = [...editClipList.children] as HTMLElement[];
+  for (let index = 0; index < cards.length; index++) {
+    const rect = cards[index].getBoundingClientRect();
+    const duration = timelineMedia.get(editVideoClips[index])?.duration || 0;
+    if (clientX <= rect.right || index === cards.length - 1) {
+      return Math.max(0, Math.min(joinSourceDuration(), offset + Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * duration));
+    }
+    offset += duration;
+  }
+  return 0;
+}
+
+function setJoinPosition(time: number): void {
+  const total = joinSourceDuration();
+  let remaining = Math.max(0, Math.min(total, time));
+  let offset = 0;
+  for (let index = 0; index < editVideoClips.length; index++) {
+    const file = editVideoClips[index];
+    const duration = timelineMedia.get(file)?.duration || 0;
+    if (!duration) continue;
+    if (remaining >= duration && index < editVideoClips.length - 1) {
+      remaining -= duration;
+      offset += duration;
+      continue;
+    }
+    const range = getEditClipRange(file);
+    if (!range) return;
+    const local = Math.max(range.start, Math.min(range.end, remaining));
+    joinTimelinePosition = offset + local;
+    if (joinPreviewFile !== file) {
+      joinPreviewVideo.pause();
+      if (joinPreviewUrl) URL.revokeObjectURL(joinPreviewUrl);
+      joinPreviewFile = file;
+      joinPreviewUrl = URL.createObjectURL(file);
+      joinPreviewVideo.onloadedmetadata = () => {
+        if (joinPreviewFile !== file) return;
+        joinPreviewVideo.currentTime = local;
+        if (joinIsPlaying) joinPreviewVideo.play().catch(() => { joinIsPlaying = false; updateJoinPlayButton(); });
+      };
+      joinPreviewVideo.src = joinPreviewUrl;
+    } else if (joinPreviewVideo.readyState >= 1) {
+      joinPreviewVideo.currentTime = local;
+      if (joinIsPlaying && joinPreviewVideo.paused) joinPreviewVideo.play().catch(() => {});
+    }
+    updateJoinPlayhead();
+    return;
+  }
+  joinTimelinePosition = 0;
+  updateJoinPlayhead();
+}
+
+function advanceJoinPreview(): void {
+  const index = editVideoClips.indexOf(joinPreviewFile as File);
+  if (index < 0) return;
+  const next = editVideoClips.slice(index + 1).find(file => getEditClipRange(file));
+  if (!next) {
+    joinIsPlaying = false;
+    joinPreviewVideo.pause();
+    const offset = editVideoClips.slice(0, index).reduce((sum, file) => sum + (timelineMedia.get(file)?.duration || 0), 0);
+    joinTimelinePosition = offset + getEditClipRange(editVideoClips[index])!.end;
+    updateJoinPlayhead();
+    updateJoinPlayButton();
+    return;
+  }
+  let offset = 0;
+  for (const file of editVideoClips) {
+    if (file === next) break;
+    offset += timelineMedia.get(file)?.duration || 0;
+  }
+  setJoinPosition(offset + getEditClipRange(next)!.start);
+}
+
+joinPreviewVideo.addEventListener('timeupdate', () => {
+  if (currentTab !== 'editVideo' || editVideoMode !== 'join') return;
+  const index = editVideoClips.indexOf(joinPreviewFile as File);
+  if (index < 0) return;
+  const range = getEditClipRange(editVideoClips[index]);
+  if (!range) return;
+  if (joinIsPlaying && joinPreviewVideo.currentTime >= range.end - 0.035) { advanceJoinPreview(); return; }
+  const offset = editVideoClips.slice(0, index).reduce((sum, file) => sum + (timelineMedia.get(file)?.duration || 0), 0);
+  joinTimelinePosition = offset + joinPreviewVideo.currentTime;
+  updateJoinPlayhead();
+});
+joinPreviewVideo.addEventListener('ended', () => { if (joinIsPlaying) advanceJoinPreview(); });
+
+async function loadTimelineMedia(file: File, frameCount = 1): Promise<void> {
+  const cached = timelineMedia.get(file);
+  if (cached && cached.frames.length >= frameCount) return;
+  const url = URL.createObjectURL(file);
+  const video = document.createElement('video');
+  video.muted = true;
+  video.preload = 'auto';
+  video.playsInline = true;
+  try {
+    video.src = url;
+    await new Promise<void>((resolve, reject) => {
+      video.onloadedmetadata = () => resolve();
+      video.onerror = () => reject(new Error('Video preview unavailable'));
+    });
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    const frames: string[] = [];
+    const canvas = document.createElement('canvas');
+    canvas.width = 144;
+    canvas.height = 82;
+    const context = canvas.getContext('2d');
+    for (let index = 0; index < frameCount && context; index++) {
+      const time = Math.min(Math.max(0, duration - 0.05), duration * (index + 0.5) / frameCount);
+      if (Math.abs(video.currentTime - time) > 0.03) {
+        await new Promise<void>((resolve, reject) => {
+          video.onseeked = () => resolve();
+          video.onerror = () => reject(new Error('Video preview unavailable'));
+          video.currentTime = time;
+        });
+      }
+      context.fillStyle = '#191527';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      if (video.videoWidth) {
+        const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
+        const width = video.videoWidth * scale;
+        const height = video.videoHeight * scale;
+        context.drawImage(video, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+      }
+      frames.push(canvas.toDataURL('image/jpeg', 0.68));
+    }
+    if ((timelineMedia.get(file)?.frames.length || 0) < frames.length) timelineMedia.set(file, { duration, frames });
+  } finally {
+    video.removeAttribute('src');
+    video.load();
+    URL.revokeObjectURL(url);
+  }
+}
+
+function updateTimelinePlayhead(): void {
+  const duration = videoPlayer.duration;
+  const fraction = Number.isFinite(duration) && duration > 0 ? Math.min(1, videoPlayer.currentTime / duration) : 0;
+  el('editTimelinePlayhead').style.left = `${12 + fraction * editTimelineTrack.offsetWidth}px`;
+  el('editTimelineCurrent').textContent = timelineClock(videoPlayer.currentTime);
+  el('editTimelinePlayhead').setAttribute('aria-valuenow', videoPlayer.currentTime.toFixed(2));
+  el('editTimelinePlayhead').setAttribute('aria-valuemax', Number.isFinite(duration) ? duration.toFixed(2) : '0');
+  const playing = !videoPlayer.paused && !videoPlayer.ended;
+  el('editTimelinePlay').textContent = playing ? 'Ⅱ' : '▶';
+  el('editTimelinePlay').setAttribute('aria-label', t(playing ? 'editPause' : 'editPlay'));
+  el('editTimelinePlay').title = t(playing ? 'editPause' : 'editPlay');
+}
+
+function renderEditTimeline(): void {
+  const duration = videoPlayer.duration;
+  if (!Number.isFinite(duration) || duration <= 0) return;
+  editTimelineContent.style.width = `${Math.max(640, duration * 22 * editTimelineZoom)}px`;
+  el('editTimelineTotal').textContent = timelineClock(duration);
+  const ruler = el('editTimelineRuler');
+  ruler.replaceChildren();
+  const step = duration > 120 ? 30 : duration > 40 ? 10 : duration > 12 ? 5 : duration > 4 ? 1 : 0.5;
+  for (let time = 0; time <= duration + step / 10; time += step) {
+    const tick = document.createElement('span');
+    tick.className = 'edit-timeline-tick';
+    tick.style.left = `${Math.min(100, time / duration * 100)}%`;
+    tick.textContent = timelineClock(time);
+    ruler.appendChild(tick);
+  }
+  const frames = el('editTimelineFrames');
+  frames.replaceChildren();
+  const images = videoToGifFile ? timelineMedia.get(videoToGifFile)?.frames || [] : [];
+  for (let index = 0; index < 8; index++) {
+    const cell = document.createElement('div');
+    cell.className = 'edit-timeline-frame';
+    if (images[index]) cell.style.backgroundImage = `url("${images[index]}")`;
+    frames.appendChild(cell);
+  }
+  updateTimelineSelection();
+  updateTimelinePlayhead();
+}
+
+function updateTimelineSelection(): void {
+  const duration = videoPlayer.duration;
+  if (!Number.isFinite(duration) || duration <= 0) return;
+  const start = Math.max(0, Math.min(duration, Number(editStartTime.value) || 0));
+  const end = Math.max(start, Math.min(duration, Number(editEndTime.value) || duration));
+  const startPercent = start / duration * 100;
+  const endPercent = end / duration * 100;
+  el('editTimelineStart').style.left = `${startPercent}%`;
+  el('editTimelineEnd').style.left = `${endPercent}%`;
+  el('editTimelineDimLeft').style.width = `${startPercent}%`;
+  el('editTimelineDimRight').style.left = `${endPercent}%`;
+  el('editTimelineDimRight').style.width = `${100 - endPercent}%`;
+  el('editTimelineStart').setAttribute('aria-valuenow', start.toFixed(2));
+  el('editTimelineEnd').setAttribute('aria-valuenow', end.toFixed(2));
+  el('editTimelineStart').setAttribute('aria-valuemax', duration.toFixed(2));
+  el('editTimelineEnd').setAttribute('aria-valuemax', duration.toFixed(2));
+  el('editTimelineStartLabel').textContent = `${t('editStartShort')} ${timelineClock(start)}`;
+  el('editTimelineEndLabel').textContent = `${t('editEndShort')} ${timelineClock(end)}`;
+}
+
+function setTimelineTrimEdge(edge: 'start' | 'end', time: number): void {
+  if (activeJob) return;
+  const duration = videoPlayer.duration;
+  if (!Number.isFinite(duration) || duration <= 0) return;
+  const start = Number(editStartTime.value);
+  const end = Number(editEndTime.value);
+  const minimum = Math.min(0.05, duration);
+  const value = edge === 'start'
+    ? Math.max(0, Math.min(end - minimum, time))
+    : Math.min(duration, Math.max(start + minimum, time));
+  (edge === 'start' ? editStartTime : editEndTime).value = value.toFixed(2);
+  invalidateEditedVideoResult();
+  videoPlayer.currentTime = value;
+  updateEditTrimSummary();
+  updateTimelineSelection();
+  updateTimelinePlayhead();
+}
+
+function timelineTimeAt(clientX: number): number {
+  const rect = editTimelineTrack.getBoundingClientRect();
+  return Math.max(0, Math.min(videoPlayer.duration || 0, (clientX - rect.left) / rect.width * videoPlayer.duration));
+}
+
+function updateEditTrimSummary() {
+  const total = videoPlayer.duration;
+  const start = Number(editStartTime.value);
+  const end = Number(editEndTime.value);
+  const summary = el('editTrimSummary');
+  if (!Number.isFinite(total) || total <= 0) { summary.textContent = ''; return; }
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end > total + 0.05) {
+    summary.textContent = t('editInvalidRange');
+    return;
+  }
+  summary.textContent = t('editTrimSummary', { length: (end - start).toFixed(1), total: total.toFixed(1) });
+}
+
+function getEditClipRange(file: File): { start: number; end: number } | null {
+  const duration = timelineMedia.get(file)?.duration;
+  if (!duration || !Number.isFinite(duration)) return null;
+  let range = editClipRanges.get(file);
+  if (!range) {
+    range = { start: 0, end: duration };
+    editClipRanges.set(file, range);
+  }
+  return range;
+}
+
+function updateJoinSummary(): void {
+  let total = 0;
+  editVideoClips.forEach((file, index) => {
+    const row = editClipList.children[index] as HTMLElement | undefined;
+    const offset = row?.querySelector('.video-edit-clip-offset');
+    if (offset) offset.textContent = timelineClock(total);
+    const range = getEditClipRange(file);
+    total += range ? range.end - range.start : 0;
+  });
+  el('editJoinSummary').textContent = `${timelineClock(total)} ${t('editJoinTotal')}`;
+  el('editJoinStartLabel').textContent = `${t('editStartShort')} ${timelineClock(0)}`;
+  el('editJoinEndLabel').textContent = `${t('editEndShort')} ${timelineClock(joinSourceDuration())}`;
+}
+
+function updateEditClipVisual(row: HTMLElement, file: File): void {
+  const duration = timelineMedia.get(file)?.duration || 0;
+  const range = getEditClipRange(file);
+  if (!range || !duration) return;
+  const left = range.start / duration * 100;
+  const right = range.end / duration * 100;
+  (row.querySelector('.video-edit-clip-dim-left') as HTMLElement).style.width = `${left}%`;
+  (row.querySelector('.video-edit-clip-dim-right') as HTMLElement).style.left = `${right}%`;
+  (row.querySelector('.video-edit-clip-dim-right') as HTMLElement).style.width = `${100 - right}%`;
+  const startHandle = row.querySelector('.video-edit-clip-handle-start') as HTMLElement;
+  const endHandle = row.querySelector('.video-edit-clip-handle-end') as HTMLElement;
+  startHandle.style.left = `${left}%`;
+  endHandle.style.left = `${right}%`;
+  for (const [handle, value] of [[startHandle, range.start], [endHandle, range.end]] as const) {
+    handle.setAttribute('aria-valuenow', value.toFixed(2));
+    handle.setAttribute('aria-valuemax', duration.toFixed(2));
+  }
+  (row.querySelector('.video-edit-clip-times') as HTMLElement).textContent = `${timelineClock(range.start)} – ${timelineClock(range.end)} · ${timelineClock(range.end - range.start)}`;
+  row.title = `${file.name}: ${timelineClock(range.start)} – ${timelineClock(range.end)}`;
+  updateJoinSummary();
+}
+
+function setEditClipEdge(row: HTMLElement, file: File, edge: 'start' | 'end', time: number): void {
+  if (activeJob) return;
+  const range = getEditClipRange(file);
+  const duration = timelineMedia.get(file)?.duration || 0;
+  if (!range || !duration) return;
+  const minimum = Math.min(0.05, duration);
+  if (edge === 'start') range.start = Math.max(0, Math.min(range.end - minimum, time));
+  else range.end = Math.min(duration, Math.max(range.start + minimum, time));
+  invalidateEditedVideoResult();
+  updateEditClipVisual(row, file);
+  if (joinPreviewFile === file) setJoinPosition(joinTimelinePosition);
+}
+
+function renderEditVideoClips() {
+  editClipList.replaceChildren();
+  let timelineOffset = 0;
+  editVideoClips.forEach((file, index) => {
+    const row = document.createElement('div');
+    row.className = 'video-edit-clip';
+    row.dataset.index = String(index);
+    row.tabIndex = 0;
+    row.draggable = true;
+    row.setAttribute('aria-label', `${index + 1}. ${file.name}. ${t('editClipDrag')}`);
+    const media = timelineMedia.get(file);
+    if (media?.duration) row.style.flexBasis = `${Math.max(240, Math.min(2400, Math.round(media.duration * 70 * editJoinZoom)))}px`;
+    row.addEventListener('dragstart', (event: DragEvent) => {
+      if (activeJob || (event.target as Element).closest('.video-edit-clip-handle, button[data-action]')) { event.preventDefault(); return; }
+      draggingClipIndex = index;
+      event.dataTransfer?.setData('text/plain', String(index));
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+      row.classList.add('is-dragging');
+    });
+    row.addEventListener('dragend', () => {
+      draggingClipIndex = -1;
+      editClipList.querySelectorAll('.drop-before, .drop-after, .is-dragging').forEach((item: Element) => item.classList.remove('drop-before', 'drop-after', 'is-dragging'));
+    });
+    row.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (!event.altKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+      event.preventDefault();
+      const target = index + (event.key === 'ArrowRight' ? 1 : -1);
+      if (target < 0 || target >= editVideoClips.length) return;
+      [editVideoClips[index], editVideoClips[target]] = [editVideoClips[target], editVideoClips[index]];
+      resetJoinPreview();
+      invalidateEditedVideoResult();
+      renderEditVideoClips();
+      (editClipList.children[target] as HTMLElement)?.focus();
+    });
+    const offset = document.createElement('div');
+    offset.className = 'video-edit-clip-offset';
+    offset.textContent = timelineClock(timelineOffset);
+    row.appendChild(offset);
+    const strip = document.createElement('div');
+    strip.className = 'video-edit-clip-strip';
+    for (let frameIndex = 0; frameIndex < 8; frameIndex++) {
+      const frame = document.createElement('div');
+      frame.className = 'video-edit-clip-frame';
+      const frameUrl = media?.frames[frameIndex] || media?.frames[0];
+      if (frameUrl) frame.style.backgroundImage = `url("${frameUrl}")`;
+      strip.appendChild(frame);
+    }
+    for (const side of ['left', 'right']) {
+      const dim = document.createElement('div');
+      dim.className = `video-edit-clip-dim video-edit-clip-dim-${side}`;
+      strip.appendChild(dim);
+    }
+    if (media?.duration) for (const edge of ['start', 'end'] as const) {
+      const handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = `video-edit-clip-handle video-edit-clip-handle-${edge}`;
+      handle.setAttribute('role', 'slider');
+      handle.setAttribute('aria-label', t(edge === 'start' ? 'editClipStart' : 'editClipEnd'));
+      handle.setAttribute('aria-valuemin', '0');
+      handle.textContent = edge === 'start' ? '‹' : '›';
+      handle.addEventListener('pointerdown', (event: PointerEvent) => {
+        event.preventDefault();
+        const original = { ...getEditClipRange(file)! };
+        const width = strip.getBoundingClientRect().width;
+        const pointerX = event.clientX;
+        handle.setPointerCapture(event.pointerId);
+        const move = (moveEvent: PointerEvent) => {
+          if (!handle.hasPointerCapture(moveEvent.pointerId)) return;
+          const initial = edge === 'start' ? original.start : original.end;
+          setEditClipEdge(row, file, edge, initial + (moveEvent.clientX - pointerX) / width * media.duration);
+        };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('lostpointercapture', () => handle.removeEventListener('pointermove', move), { once: true });
+      });
+      handle.addEventListener('keydown', (event: KeyboardEvent) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const current = getEditClipRange(file)!;
+        const step = event.shiftKey ? 1 : 0.1;
+        setEditClipEdge(row, file, edge, (edge === 'start' ? current.start : current.end) + (event.key === 'ArrowRight' ? step : -step));
+      });
+      strip.appendChild(handle);
+    }
+    row.appendChild(strip);
+    const number = document.createElement('span');
+    number.className = 'video-edit-clip-number';
+    number.textContent = String(index + 1);
+    row.appendChild(number);
+    const name = document.createElement('span');
+    name.className = 'video-edit-clip-name';
+    name.textContent = file.name;
+    name.title = file.name;
+    row.appendChild(name);
+    const times = document.createElement('div');
+    times.className = 'video-edit-clip-times';
+    times.textContent = media ? '' : t('editLoadingVideo');
+    row.appendChild(times);
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '×';
+    remove.dataset.action = 'remove';
+    remove.dataset.index = String(index);
+    remove.title = t('editClipRemove');
+    remove.setAttribute('aria-label', `${t('editClipRemove')} ${file.name}`);
+    remove.disabled = editVideoClips.length === 1;
+    row.appendChild(remove);
+    editClipList.appendChild(row);
+    if (media?.duration) updateEditClipVisual(row, file);
+    const range = getEditClipRange(file);
+    if (range) timelineOffset += range.end - range.start;
+    if (!media && !timelineMediaFailed.has(file)) loadTimelineMedia(file).then(() => {
+      if (editVideoClips.includes(file)) renderEditVideoClips();
+    }).catch(() => { timelineMediaFailed.add(file); });
+  });
+  updateJoinSummary();
+  renderJoinRuler();
+}
+
+function setEditVideoMode(mode: 'trim' | 'join') {
+  if (editVideoMode !== mode) invalidateEditedVideoResult();
+  editVideoMode = mode;
+  el('editTrimMode').classList.toggle('active', mode === 'trim');
+  el('editJoinMode').classList.toggle('active', mode === 'join');
+  el('editTrimPanel').classList.toggle('hidden', mode !== 'trim');
+  el('editJoinPanel').classList.toggle('hidden', mode !== 'join');
+  el('editVideoBtnText').textContent = t(mode === 'trim' ? 'editTrimAction' : 'editJoinAction');
+  if (mode === 'trim') renderEditTimeline();
+  else renderJoinRuler();
+  syncJoinPreviewVisibility();
+}
+
+function resetJoinPreview(): void {
+  joinIsPlaying = false;
+  joinTimelinePosition = 0;
+  joinPreviewVideo.pause();
+  joinPreviewVideo.removeAttribute('src');
+  joinPreviewVideo.load();
+  if (joinPreviewUrl) URL.revokeObjectURL(joinPreviewUrl);
+  joinPreviewUrl = null;
+  joinPreviewFile = null;
+  updateJoinPlayButton();
+  updateJoinPlayhead();
+}
+
+function invalidateEditedVideoResult(): void {
+  if (!editedVideoBlobUrl) return;
+  URL.revokeObjectURL(editedVideoBlobUrl);
+  editedVideoBlobUrl = null;
+  resultVideo.pause();
+  resultVideo.removeAttribute('src');
+  resultVideo.load();
+  resultVideo.classList.add('hidden');
+  if (placeholderResult) { placeholderResult.textContent = t('placeholderEditVideo'); placeholderResult.style.display = ''; }
+  downloadSection.classList.add('hidden');
+}
+
+el('editTrimMode').addEventListener('click', () => { if (!activeJob) setEditVideoMode('trim'); });
+el('editJoinMode').addEventListener('click', () => { if (!activeJob) setEditVideoMode('join'); });
+el('editTimelinePlay').addEventListener('click', () => {
+  if (videoPlayer.paused) videoPlayer.play().catch(() => {});
+  else videoPlayer.pause();
+});
+el('editJoinPlay').addEventListener('click', () => {
+  if (joinIsPlaying) {
+    joinIsPlaying = false;
+    joinPreviewVideo.pause();
+  } else if (joinSourceDuration() > 0) {
+    if (joinTimelinePosition >= joinSelectedEnd() - 0.02) setJoinPosition(0);
+    else setJoinPosition(joinTimelinePosition);
+    joinIsPlaying = true;
+    if (joinPreviewVideo.readyState >= 1) joinPreviewVideo.play().catch(() => { joinIsPlaying = false; updateJoinPlayButton(); });
+  }
+  updateJoinPlayButton();
+});
+for (const eventName of ['timeupdate', 'play', 'pause', 'ended']) videoPlayer.addEventListener(eventName, updateTimelinePlayhead);
+el('editTimelineZoomIn').addEventListener('click', () => { editTimelineZoom = Math.min(8, editTimelineZoom * 1.5); renderEditTimeline(); });
+el('editTimelineZoomOut').addEventListener('click', () => { editTimelineZoom = Math.max(0.5, editTimelineZoom / 1.5); renderEditTimeline(); });
+el('editJoinZoomIn').addEventListener('click', () => { editJoinZoom = Math.min(8, editJoinZoom * 1.5); renderEditVideoClips(); });
+el('editJoinZoomOut').addEventListener('click', () => { editJoinZoom = Math.max(0.5, editJoinZoom / 1.5); renderEditVideoClips(); });
+for (const edge of ['start', 'end'] as const) {
+  const handle = el(edge === 'start' ? 'editTimelineStart' : 'editTimelineEnd');
+  handle.addEventListener('pointerdown', (event: PointerEvent) => {
+    event.preventDefault();
+    handle.setPointerCapture(event.pointerId);
+    setTimelineTrimEdge(edge, timelineTimeAt(event.clientX));
+  });
+  handle.addEventListener('pointermove', (event: PointerEvent) => {
+    if (handle.hasPointerCapture(event.pointerId)) setTimelineTrimEdge(edge, timelineTimeAt(event.clientX));
+  });
+  handle.addEventListener('keydown', (event: KeyboardEvent) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const step = event.shiftKey ? 1 : 0.1;
+    const current = Number((edge === 'start' ? editStartTime : editEndTime).value);
+    setTimelineTrimEdge(edge, current + (event.key === 'ArrowRight' ? step : -step));
+  });
+}
+const trimPlayhead = el('editTimelinePlayhead');
+trimPlayhead.addEventListener('pointerdown', (event: PointerEvent) => {
+  event.preventDefault();
+  trimPlayhead.setPointerCapture(event.pointerId);
+});
+trimPlayhead.addEventListener('pointermove', (event: PointerEvent) => {
+  if (!trimPlayhead.hasPointerCapture(event.pointerId)) return;
+  videoPlayer.currentTime = timelineTimeAt(event.clientX);
+  updateTimelinePlayhead();
+});
+trimPlayhead.addEventListener('keydown', (event: KeyboardEvent) => {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  event.preventDefault();
+  videoPlayer.currentTime = Math.max(0, Math.min(videoPlayer.duration, videoPlayer.currentTime + (event.key === 'ArrowRight' ? 1 : -1) * (event.shiftKey ? 1 : 0.1)));
+  updateTimelinePlayhead();
+});
+const joinPlayhead = el('editJoinPlayhead');
+joinPlayhead.addEventListener('pointerdown', (event: PointerEvent) => {
+  event.preventDefault();
+  joinPlayhead.setPointerCapture(event.pointerId);
+});
+joinPlayhead.addEventListener('pointermove', (event: PointerEvent) => {
+  if (joinPlayhead.hasPointerCapture(event.pointerId)) setJoinPosition(joinTimeAt(event.clientX));
+});
+joinPlayhead.addEventListener('keydown', (event: KeyboardEvent) => {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  event.preventDefault();
+  setJoinPosition(joinTimelinePosition + (event.key === 'ArrowRight' ? 1 : -1) * (event.shiftKey ? 1 : 0.1));
+});
+el('editAddClips').addEventListener('click', () => { if (!activeJob) editJoinInput.click(); });
+el('editChooseAnotherBtn').addEventListener('click', resetAll);
+
+editJoinInput.addEventListener('change', () => {
+  const added = Array.from(editJoinInput.files as FileList).filter(file => file.type.startsWith('video/'));
+  editJoinInput.value = '';
+  if (!added.length) return;
+  if (editVideoClips.length + added.length > 8) { showToast(t('editTooManyClips'), 'error'); return; }
+  if ([...editVideoClips, ...added].reduce((sum, file) => sum + file.size, 0) > 250 * 1024 * 1024) {
+    showToast(t('editTooLarge'), 'error'); return;
+  }
+  editVideoClips.push(...added);
+  invalidateEditedVideoResult();
+  renderEditVideoClips();
+});
+
+editClipList.addEventListener('click', (event: MouseEvent) => {
+  if (activeJob) return;
+  const button = (event.target as Element).closest('button[data-action]') as HTMLButtonElement | null;
+  if (!button) return;
+  const index = Number(button.dataset.index);
+  if (!Number.isInteger(index) || index < 0 || index >= editVideoClips.length) return;
+  if (button.dataset.action === 'remove' && editVideoClips.length > 1) {
+    if (joinPreviewFile === editVideoClips[index]) resetJoinPreview();
+    editClipRanges.delete(editVideoClips[index]);
+    editVideoClips.splice(index, 1);
+  }
+  invalidateEditedVideoResult();
+  renderEditVideoClips();
+});
+
+editClipList.addEventListener('dragover', (event: DragEvent) => {
+  if (draggingClipIndex < 0) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  const bounds = editJoinScroll.getBoundingClientRect();
+  if (event.clientX > bounds.right - 40) editJoinScroll.scrollLeft += 22;
+  if (event.clientX < bounds.left + 40) editJoinScroll.scrollLeft -= 22;
+  editClipList.querySelectorAll('.drop-before, .drop-after').forEach((item: Element) => item.classList.remove('drop-before', 'drop-after'));
+  const card = (event.target as Element).closest('.video-edit-clip') as HTMLElement | null;
+  if (!card) return;
+  const before = event.clientX < card.getBoundingClientRect().left + card.offsetWidth / 2;
+  card.classList.add(before ? 'drop-before' : 'drop-after');
+});
+editClipList.addEventListener('drop', (event: DragEvent) => {
+  if (draggingClipIndex < 0) return;
+  event.preventDefault();
+  const card = (event.target as Element).closest('.video-edit-clip') as HTMLElement | null;
+  const target = card ? Number(card.dataset.index) + (event.clientX >= card.getBoundingClientRect().left + card.offsetWidth / 2 ? 1 : 0) : editVideoClips.length;
+  const source = draggingClipIndex;
+  draggingClipIndex = -1;
+  if (!Number.isInteger(target) || source < 0 || source >= editVideoClips.length) return;
+  const [moved] = editVideoClips.splice(source, 1);
+  editVideoClips.splice(Math.max(0, Math.min(editVideoClips.length, target > source ? target - 1 : target)), 0, moved);
+  resetJoinPreview();
+  invalidateEditedVideoResult();
+  renderEditVideoClips();
+});
+
+editVideoBtn.addEventListener('click', async () => {
+  if (!videoToGifFile || !Number.isFinite(videoPlayer.duration)) return;
+  const mode = editVideoMode;
+  const start = Number(editStartTime.value);
+  const end = Number(editEndTime.value);
+  if (mode === 'trim' && (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end > videoPlayer.duration + 0.05)) {
+    showToast(t('editInvalidRange'), 'error'); return;
+  }
+  if (mode === 'join' && editVideoClips.length < 2) { showToast(t('editNeedClips'), 'error'); return; }
+  if (mode === 'join' && editVideoClips.reduce((sum, file) => sum + file.size, 0) > 250 * 1024 * 1024) {
+    showToast(t('editTooLarge'), 'error'); return;
+  }
+  if (mode === 'join' && editVideoClips.some(file => !getEditClipRange(file))) {
+    showToast(t('editClipNotReady'), 'error'); return;
+  }
+
+  const job = beginJob();
+  job.ffmpeg = true;
+  editVideoBtn.disabled = true;
+  downloadSection.classList.add('hidden');
+  progressSection.classList.remove('hidden');
+  updateProgress(5, t('preparingVideo'));
+  try {
+    const ffmpeg = await loadFFmpeg();
+    if (job.cancelled) return;
+    const report = (key: string, percent: number, params?: Record<string, number>) => updateProgress(percent, t(key, params));
+    const cancelled = () => job.cancelled;
+    const blob = mode === 'trim'
+      ? await trimVideo(ffmpeg, videoToGifFile, start, end, report, cancelled)
+      : await joinVideos(ffmpeg, editVideoClips.map(file => ({ file, ...getEditClipRange(file)! })), videoPlayer.videoWidth, videoPlayer.videoHeight, report, cancelled);
+    if (job.cancelled) return;
+    if (editedVideoBlobUrl) URL.revokeObjectURL(editedVideoBlobUrl);
+    editedVideoBlobUrl = URL.createObjectURL(blob);
+    editedVideoName = `${(editVideoClips[0] || videoToGifFile).name.replace(/\.[^/.]+$/, '')}_${mode === 'trim' ? 'trimmed' : 'joined'}.mp4`;
+    resultVideo.src = editedVideoBlobUrl;
+    resultVideo.muted = false;
+    resultVideo.classList.remove('hidden');
+    resultImg.classList.add('hidden');
+    if (placeholderResult) placeholderResult.style.display = 'none';
+    resultMeta.textContent = `${editedVideoName} · ${formatBytes(blob.size)}`;
+    if (successBadgeText) successBadgeText.textContent = t('editSuccessBadge');
+    downloadBtnText.textContent = t('editDownload');
+    updateProgress(100, t('editSuccess'));
+    progressSection.classList.add('hidden');
+    downloadSection.classList.remove('hidden');
+    downloadSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    finishJob(job);
+    showToast(t('editSuccess'), 'success');
+  } catch (err) {
+    if (!job.cancelled) {
+      finishJob(job);
+      progressSection.classList.add('hidden');
+      showToast(t('editError', { err: err?.message || err }), 'error');
+      console.error('[EditVideo]', err);
+    }
+  } finally {
+    editVideoBtn.disabled = false;
+  }
+});
+
 muteVideoBtn.addEventListener('click', async () => {
   if (!videoToGifFile) { showToast('Hãy chọn video trước!', 'error'); return; }
+  const job = beginJob();
+  job.ffmpeg = true;
 
   muteVideoBtn.disabled = true;
   downloadSection.classList.add('hidden');
@@ -1541,11 +2274,13 @@ muteVideoBtn.addEventListener('click', async () => {
 
   try {
     const ffmpeg = await loadFFmpeg();
+    if (job.cancelled) { ffmpeg.terminate(); ffmpegInstance = null; ffmpegLoaded = false; return; }
     updateProgress(35, 'Đang nạp video vào bộ nhớ...');
 
     const { fetchFile } = window.FFmpegUtil || {};
     if (!fetchFile) throw new Error('FFmpegUtil chưa được tải');
     const inputData = await fetchFile(videoToGifFile);
+    if (job.cancelled) return;
 
     const ext = videoToGifFile.name.split('.').pop().toLowerCase() || 'mp4';
     const inputName  = `input.${ext}`;
@@ -1556,9 +2291,11 @@ muteVideoBtn.addEventListener('click', async () => {
     updateProgress(65, 'Đang xóa âm thanh khỏi video...');
     // -c:v copy = giữ nguyên chất lượng video, -an = xóa âm thanh, không re-encode → xử lý tức thì
     await ffmpeg.exec(['-i', inputName, '-c:v', 'copy', '-an', outputName]);
+    if (job.cancelled) return;
 
     updateProgress(90, 'Đang hoàn tất đóng gói video...');
     const outputData = await ffmpeg.readFile(outputName);
+    if (job.cancelled) return;
     const blob = new Blob([outputData.buffer], { type: videoToGifFile.type || 'video/mp4' });
 
     await ffmpeg.deleteFile(inputName).catch(() => {});
@@ -1584,8 +2321,11 @@ muteVideoBtn.addEventListener('click', async () => {
     downloadSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     showToast(t('toastMuteSuccess'), 'success');
+    finishJob(job);
 
   } catch (err) {
+    if (job.cancelled) return;
+    finishJob(job);
     console.error('[MuteVideo]', err);
     progressSection.classList.add('hidden');
     showToast(t('toastMuteError', { err: err.message || err }), 'error');
@@ -1597,6 +2337,7 @@ muteVideoBtn.addEventListener('click', async () => {
 // ─── Process GIF ──────────────────────────────────────────────────────────────
 async function processGif() {
   if (!superGif || frameCount === 0) { showToast('File GIF chưa sẵn sàng!', 'error'); return; }
+  const job = beginJob();
 
   const tolerance = parseInt(toleranceSlider.value);
   const feather   = parseInt(featherSlider.value);
@@ -1632,27 +2373,29 @@ async function processGif() {
   } catch (e) {
     console.warn('Không tải được worker script:', e);
   }
+  if (job.cancelled) { if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl); return; }
 
   const gifCanvas = superGif.get_canvas();
   const W = gifCanvas.width;
   const H = gifCanvas.height;
-  const outW = Math.max(2, Math.round(W * outScale));
-  const outH = Math.max(2, Math.round(H * outScale));
+  const crop = getTransform() || { x: 0, y: 0, w: W, h: H, outW: W, outH: H };
+  const outW = Math.max(2, Math.round(crop.outW * outScale));
+  const outH = Math.max(2, Math.round(crop.outH * outScale));
 
   const tmpCanvas = document.createElement('canvas');
   tmpCanvas.width  = W;
   tmpCanvas.height = H;
   const tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
 
-  // Scaled output canvas (only created when compression reduces size)
-  const needsScale  = outScale < 1;
-  const scaledCanvas = needsScale ? document.createElement('canvas') : tmpCanvas;
-  if (needsScale) { scaledCanvas.width = outW; scaledCanvas.height = outH; }
-  const scaledCtx = needsScale ? scaledCanvas.getContext('2d') : null;
+  const scaledCanvas = document.createElement('canvas');
+  scaledCanvas.width = outW;
+  scaledCanvas.height = outH;
+  const scaledCtx = scaledCanvas.getContext('2d', { willReadFrequently: true });
 
   const processedFrames = [];
 
   for (let i = 0; i < frameCount; i++) {
+    if (job.cancelled) { if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl); return; }
     superGif.move_to(i);
     const src = superGif.get_canvas();
 
@@ -1677,7 +2420,7 @@ async function processGif() {
   // Dùng magenta cố định có thể chiếm chung palette với màu đỏ/hồng của vật thể.
   // Chọn chroma key xa nhất với tất cả pixel đục trong GIF để không làm mất màu thật.
   const transparentKey = chooseGifTransparencyKey(processedFrames);
-  const gifOpts = {
+  const gifOpts: any = {
     workers: workerBlobUrl ? 2 : 0,
     quality: gifQuality,
     width:   outW,
@@ -1686,30 +2429,24 @@ async function processGif() {
   };
   if (workerBlobUrl) gifOpts.workerScript = workerBlobUrl;
   const gif = new GIF(gifOpts);
+  job.gif = gif;
+  job.cleanup = () => { if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl); };
 
   let outputFrameCount = 0;
   for (let i = 0; i < processedFrames.length; i++) {
+    if (job.cancelled) { if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl); return; }
     if (i % frameSkip !== 0) continue; // skip frames for size reduction
     const { imgData, delay } = processedFrames[i];
     const frameDelay = Math.max(20, Math.round(delay * frameSkip));
 
-    if (needsScale) {
-      // ✔ Đúng thứ tự: scale với alpha nguyên vẹn → rồi mới apply key color
-      // Nếu apply key trước: bilinear scaling sẽ trộn lime-green vào viền → viền xanh lá
-      tmpCtx.putImageData(imgData, 0, 0);
-      scaledCtx.clearRect(0, 0, outW, outH);
-      scaledCtx.drawImage(tmpCanvas, 0, 0, outW, outH);
-      // Đọc lại pixel ở resolution nhỏ, rồi mới tô key color
-      const scaledPx = scaledCtx.getImageData(0, 0, outW, outH);
-      applyGifTransparencyKey(scaledPx.data, transparentKey);
-      scaledCtx.putImageData(scaledPx, 0, 0);
-      gif.addFrame(scaledCanvas, { delay: frameDelay, copy: true });
-    } else {
-      // Không scale: apply key trực tiếp rồi put lên canvas
-      applyGifTransparencyKey(imgData.data, transparentKey);
-      tmpCtx.putImageData(imgData, 0, 0);
-      gif.addFrame(tmpCanvas, { delay: frameDelay, copy: true });
-    }
+    // Scale/crop while alpha is intact; apply GIF transparency key afterwards.
+    tmpCtx.putImageData(imgData, 0, 0);
+    scaledCtx.clearRect(0, 0, outW, outH);
+    scaledCtx.drawImage(tmpCanvas, crop.x, crop.y, crop.w, crop.h, 0, 0, outW, outH);
+    const scaledPx = scaledCtx.getImageData(0, 0, outW, outH);
+    applyGifTransparencyKey(scaledPx.data, transparentKey);
+    scaledCtx.putImageData(scaledPx, 0, 0);
+    gif.addFrame(scaledCanvas, { delay: frameDelay, copy: true });
 
     outputFrameCount++;
     updateProgress(60 + Math.round(((i + 1) / processedFrames.length) * 20), `Chuẩn bị frame ${i + 1} / ${frameCount}`);
@@ -1722,11 +2459,9 @@ async function processGif() {
   gif.on('progress', p => updateProgress(85 + Math.round(p * 14), 'Đang mã hóa GIF...'));
 
   gif.on('finished', blob => {
+    if (job.cancelled) return;
+    finishJob(job);
     if (workerBlobUrl) { URL.revokeObjectURL(workerBlobUrl); workerBlobUrl = null; }
-    // Store specifically for animation base
-    if (lastStaticProcessedUrl) URL.revokeObjectURL(lastStaticProcessedUrl);
-    lastStaticProcessedUrl = URL.createObjectURL(blob);
-    
     if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
     resultBlobUrl = URL.createObjectURL(blob);
 
@@ -1748,6 +2483,8 @@ async function processGif() {
   });
 
   gif.on('error', err => {
+    if (job.cancelled) return;
+    finishJob(job);
     console.error('gif.js error:', err);
     if (workerBlobUrl) { URL.revokeObjectURL(workerBlobUrl); workerBlobUrl = null; }
     progressSection.classList.add('hidden');
@@ -1755,7 +2492,7 @@ async function processGif() {
     showToast(t('toastGifEncodeError', { err: err?.message || err }), 'error');
   });
 
-  gif.render();
+  if (!job.cancelled) gif.render();
 }
 
 // Hai thẻ <img> GIF có timeline riêng. Kết quả được gán sau khi encode nên
@@ -1769,64 +2506,6 @@ function showSynchronizedGifPreviews(originalUrl, processedUrl) {
     resultImg.src = processedUrl;
     resultImg.classList.remove('hidden');
   });
-}
-
-// Chọn màu key có khoảng cách nhỏ nhất tới pixel thật là lớn nhất.
-// Việc này tránh trường hợp màu key magenta bị gif.js gộp vào màu đỏ/hồng.
-function chooseGifTransparencyKey(frames) {
-  const candidates = [
-    0x00FF00, // lime
-    0x00FFFF, // cyan
-    0xFF00FF, // magenta
-    0x0000FF, // blue
-    0xFFFF00, // yellow
-    0xFF8000, // orange
-  ];
-  let bestKey = candidates[0];
-  let bestMinDistance = -1;
-
-  for (const key of candidates) {
-    const kr = (key >> 16) & 255;
-    const kg = (key >> 8) & 255;
-    const kb = key & 255;
-    let minDistance = Infinity;
-
-    for (const frame of frames) {
-      const data = frame.imgData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] < 128) continue;
-        const dr = data[i] - kr;
-        const dg = data[i + 1] - kg;
-        const db = data[i + 2] - kb;
-        const distance = dr * dr + dg * dg + db * db;
-        if (distance < minDistance) minDistance = distance;
-        if (minDistance === 0) break;
-      }
-      if (minDistance === 0) break;
-    }
-
-    if (minDistance > bestMinDistance) {
-      bestMinDistance = minDistance;
-      bestKey = key;
-    }
-  }
-
-  return bestKey;
-}
-
-function applyGifTransparencyKey(data, key) {
-  const kr = (key >> 16) & 255;
-  const kg = (key >> 8) & 255;
-  const kb = key & 255;
-
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] < 128) {
-      data[i] = kr;
-      data[i + 1] = kg;
-      data[i + 2] = kb;
-    }
-    data[i + 3] = 255;
-  }
 }
 
 // ─── Frame Editor Module ──────────────────────────────────────────────────────
@@ -1903,6 +2582,27 @@ function renderFilmstrip() {
     const item = document.createElement('div');
     item.className = 'filmstrip-item' + (idx === activeFrameIndex ? ' active' : '');
     item.id = `filmstripItem-${idx}`;
+    item.draggable = true;
+    item.addEventListener('dragstart', event => {
+      event.dataTransfer.setData('text/plain', String(idx));
+      event.dataTransfer.effectAllowed = 'move';
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    item.addEventListener('dragover', event => event.preventDefault());
+    item.addEventListener('drop', event => {
+      event.preventDefault();
+      const from = Number(event.dataTransfer.getData('text/plain'));
+      if (!Number.isInteger(from) || from < 0 || from >= gifFrames.length || from === idx) return;
+      const activeFrame = gifFrames[activeFrameIndex];
+      const [moved] = gifFrames.splice(from, 1);
+      gifFrames.splice(idx, 0, moved);
+      deletedFramesStack = [];
+      updateTimelineUndoBtn();
+      activeFrameIndex = gifFrames.indexOf(activeFrame);
+      renderFilmstrip();
+      setActiveFrame(activeFrameIndex);
+    });
 
     // Quick delete button on hover
     const delBtn = document.createElement('button');
@@ -1929,7 +2629,7 @@ function renderFilmstrip() {
 
     const label = document.createElement('span');
     label.className = 'filmstrip-label';
-    label.textContent = `#${idx + 1}`;
+    label.textContent = `#${idx + 1} · ${frame.delay}ms`;
 
     item.appendChild(delBtn);
     item.appendChild(thumbWrap);
@@ -1946,7 +2646,7 @@ function updateTimelineUndoBtn() {
   frameRestoreBtn.disabled = (count === 0);
   frameRestoreBtn.style.opacity = (count === 0) ? '0.5' : '1';
   frameRestoreBtn.style.pointerEvents = (count === 0) ? 'none' : 'auto';
-  const textEl = document.getElementById('frameRestoreBtnText');
+  const textEl = el('frameRestoreBtnText');
   if (textEl) {
     textEl.textContent = count > 0 
       ? `${t('frameRestoreBtn')} (${count})` 
@@ -1994,7 +2694,7 @@ function deleteFrame(idx) {
 }
 
 function updateThumbnail(idx) {
-  const canvas = document.getElementById(`filmstripCanvas-${idx}`);
+  const canvas = el(`filmstripCanvas-${idx}`);
   if (canvas && gifFrames[idx]) {
     const ctx = canvas.getContext('2d');
     ctx.putImageData(gifFrames[idx].currentImageData, 0, 0);
@@ -2011,7 +2711,7 @@ function setActiveFrame(idx) {
     el.classList.toggle('active', i === idx);
   });
 
-  const activeItem = document.getElementById(`filmstripItem-${idx}`);
+  const activeItem = el(`filmstripItem-${idx}`);
   if (activeItem) {
     activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }
@@ -2021,7 +2721,18 @@ function setActiveFrame(idx) {
   if (frameEditorIndexBadge) frameEditorIndexBadge.textContent = `Frame ${idx + 1} / ${gifFrames.length}`;
   if (frameCounterNav) frameCounterNav.textContent = `${idx + 1} / ${gifFrames.length}`;
   if (frameEditorDelayBadge) frameEditorDelayBadge.textContent = `Delay: ${gifFrames[idx].delay}ms`;
+  if (frameDelayInput) frameDelayInput.value = gifFrames[idx].delay;
 }
+
+frameDelayInput?.addEventListener('change', () => {
+  const frame = gifFrames[activeFrameIndex];
+  if (!frame) return;
+  frame.delay = Math.max(20, Math.min(60000, Math.round(Number(frameDelayInput.value) || 100)));
+  frameDelayInput.value = frame.delay;
+  if (frameEditorDelayBadge) frameEditorDelayBadge.textContent = `Delay: ${frame.delay}ms`;
+  const label = q(`#filmstripItem-${activeFrameIndex} .filmstrip-label`);
+  if (label) label.textContent = `#${activeFrameIndex + 1} · ${frame.delay}ms`;
+});
 
 function applyCanvasZoom() {
   const frame = gifFrames[activeFrameIndex];
@@ -2052,9 +2763,9 @@ function applyCanvasZoom() {
 
   document.querySelectorAll('.btn-zoom-pill').forEach(btn => {
     if (currentZoom === 'fit') {
-      btn.classList.toggle('active', btn.dataset.zoom === 'fit');
+      btn.classList.toggle('active', (btn as HTMLElement).dataset.zoom === 'fit');
     } else {
-      btn.classList.toggle('active', Math.abs((parseFloat(btn.dataset.zoom) || 0) - zoomNumeric) < 0.05);
+      btn.classList.toggle('active', Math.abs((parseFloat((btn as HTMLElement).dataset.zoom) || 0) - zoomNumeric) < 0.05);
     }
   });
 }
@@ -2232,7 +2943,7 @@ if (frameEditorCanvas) {
 
 document.querySelectorAll('input[name="frameTool"]').forEach(r => {
   r.addEventListener('change', e => {
-    currentFrameTool = e.target.value;
+    currentFrameTool = (e.target as HTMLInputElement).value;
     if (currentFrameTool === 'wand') {
       frameWandControls.style.display = 'flex';
       frameEraserControls.style.display = 'none';
@@ -2262,7 +2973,7 @@ if (frameZoomOutBtn) frameZoomOutBtn.addEventListener('click', zoomOut);
 
 document.querySelectorAll('.btn-zoom-pill').forEach(btn => {
   btn.addEventListener('click', () => {
-    const z = btn.dataset.zoom;
+    const z = (btn as HTMLElement).dataset.zoom;
     if (z === 'fit') {
       currentZoom = 'fit';
     } else {
@@ -2273,7 +2984,7 @@ document.querySelectorAll('.btn-zoom-pill').forEach(btn => {
 });
 
 window.addEventListener('keydown', e => {
-  if (e.code === 'Space' && !e.target.matches('input, textarea, select, [contenteditable]')) {
+  if (e.code === 'Space' && !(e.target as Element).matches('input, textarea, select, [contenteditable]')) {
     if (currentTab === 'frameEditor') {
       e.preventDefault();
       isSpacePressed = true;
@@ -2421,7 +3132,7 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
     frameUndoBtn.click();
   } else if (e.key === 'Delete' || e.key === 'Backspace') {
-    if (!e.target.matches('input, textarea, select, [contenteditable]')) {
+    if (!(e.target as Element).matches('input, textarea, select, [contenteditable]')) {
       e.preventDefault();
       deleteFrame(activeFrameIndex);
     }
@@ -2433,6 +3144,7 @@ async function exportEditedGif() {
     showToast(t('toastNoFramesToExport'), 'error');
     return;
   }
+  const job = beginJob();
 
   frameEditorExportBtn.disabled = true;
   progressSection.classList.remove('hidden');
@@ -2455,8 +3167,9 @@ async function exportEditedGif() {
     const speed = parseFloat(speedSlider.value) || 1;
 
     const outScale = preset.scale;
-    const outW = Math.max(1, Math.round(W * outScale));
-    const outH = Math.max(1, Math.round(H * outScale));
+    const crop = getTransform() || { x: 0, y: 0, w: W, h: H, outW: W, outH: H };
+    const outW = Math.max(1, Math.round(crop.outW * outScale));
+    const outH = Math.max(1, Math.round(crop.outH * outScale));
 
     const exportFrames = [];
     const tmpCanvas = document.createElement('canvas');
@@ -2470,11 +3183,12 @@ async function exportEditedGif() {
     const scaledCtx = scaledCanvas.getContext('2d');
 
     for (let i = 0; i < gifFrames.length; i++) {
+      if (job.cancelled) return;
       const frame = gifFrames[i];
       tmpCtx.putImageData(frame.currentImageData, 0, 0);
 
       scaledCtx.clearRect(0, 0, outW, outH);
-      scaledCtx.drawImage(tmpCanvas, 0, 0, outW, outH);
+      scaledCtx.drawImage(tmpCanvas, crop.x, crop.y, crop.w, crop.h, 0, 0, outW, outH);
 
       const delay = Math.max(20, Math.round(frame.delay / speed));
       exportFrames.push({
@@ -2482,10 +3196,12 @@ async function exportEditedGif() {
         delay
       });
       updateProgress(Math.round(((i + 1) / gifFrames.length) * 50), `Chuẩn bị frame ${i + 1}/${gifFrames.length}`);
+      if (i % 5 === 0) await sleep(0);
     }
 
     const transparentKey = chooseGifTransparencyKey(exportFrames);
     const workerUrl = await getGifWorkerUrl();
+    if (job.cancelled) { if (workerUrl) URL.revokeObjectURL(workerUrl); return; }
     const gif = new window.GIF({
       workers: workerUrl ? 2 : 0,
       workerScript: workerUrl || undefined,
@@ -2495,6 +3211,8 @@ async function exportEditedGif() {
       transparent: transparentKey,
       repeat: 0
     });
+    job.gif = gif;
+    job.cleanup = () => { if (workerUrl) URL.revokeObjectURL(workerUrl); };
 
     const frameCanvas = document.createElement('canvas');
     frameCanvas.width = outW;
@@ -2513,6 +3231,9 @@ async function exportEditedGif() {
     });
 
     gif.on('finished', blob => {
+      if (job.cancelled) return;
+      finishJob(job);
+      if (workerUrl) URL.revokeObjectURL(workerUrl);
       if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
       resultBlobUrl = URL.createObjectURL(blob);
 
@@ -2532,10 +3253,19 @@ async function exportEditedGif() {
       showToast(t('toastExportSuccess'), 'success');
     });
 
-    gif.on('error', err => { throw err; });
-    gif.render();
+    gif.on('error', err => {
+      if (job.cancelled) return;
+      finishJob(job);
+      if (workerUrl) URL.revokeObjectURL(workerUrl);
+      progressSection.classList.add('hidden');
+      frameEditorExportBtn.disabled = false;
+      showToast(t('toastExportError', { err: err.message || err }), 'error');
+    });
+    if (!job.cancelled) gif.render();
 
   } catch (err) {
+    if (job.cancelled) return;
+    finishJob(job);
     console.error(err);
     progressSection.classList.add('hidden');
     frameEditorExportBtn.disabled = false;
@@ -2547,140 +3277,41 @@ if (frameEditorExportBtn) {
   frameEditorExportBtn.addEventListener('click', exportEditedGif);
 }
 
-// ─── Background Removal Algorithm v2 ──────────────────────────────────────────
-// Flood-fill từ viền ảnh với khoảng cách màu Redmean (perceptual).
-// Viền được làm mượt bằng Gaussian blur thay vì box blur.
-function removeBackground(data, r0, g0, b0, tolerance, feather, w, h, seeds = []) {
-  // Redmean range ≈ 9 × 255² = 585 225. Map slider (0-128) đến cùng tỉ lệ.
-  const tol2 = tolerance * tolerance * 9;
-  const n    = w * h;
-  const mask    = new Uint8Array(n); // 255 = nền (xóa), 0 = vật thể (giữ)
-  const visited = new Uint8Array(n);
-  const queue   = [];
-
-  // ── Flood-fill từ 4 viền ảnh ──────────────────────────────────────────────
-  function tryEnqueue(x, y) {
-    const idx = y * w + x;
-    if (visited[idx]) return;
-    visited[idx] = 1;
-    const b = idx * 4;
-    if (data[b + 3] < 10 || colorDistance2(data[b], data[b + 1], data[b + 2], r0, g0, b0) <= tol2)
-      queue.push(idx);
-  }
-
-  for (let x = 0; x < w; x++) { tryEnqueue(x, 0); tryEnqueue(x, h - 1); }
-  for (let y = 1; y < h - 1; y++) { tryEnqueue(0, y); tryEnqueue(w - 1, y); }
-
-  // BFS 8 hướng
-  while (queue.length) {
-    const idx = queue.pop();
-    mask[idx] = 255;
-    const x = idx % w, y = (idx / w) | 0;
-    if (x > 0)         tryEnqueue(x - 1, y);
-    if (x < w - 1)     tryEnqueue(x + 1, y);
-    if (y > 0)         tryEnqueue(x, y - 1);
-    if (y < h - 1)     tryEnqueue(x, y + 1);
-    if (x > 0     && y > 0)     tryEnqueue(x - 1, y - 1);
-    if (x < w - 1 && y > 0)     tryEnqueue(x + 1, y - 1);
-    if (x > 0     && y < h - 1) tryEnqueue(x - 1, y + 1);
-    if (x < w - 1 && y < h - 1) tryEnqueue(x + 1, y + 1);
-  }
-
-  // ── Seed thủ công (click xóa vùng nền kẹt) ────────────────────────────────
-  for (const p of seeds) {
-    if (p.x < 0 || p.x >= w || p.y < 0 || p.y >= h) continue;
-    const [sr, sg, sb] = p.color;
-    const qM = [], vM = new Uint8Array(n);
-
-    const enqM = (x, y) => {
-      const idx = y * w + x;
-      if (vM[idx] || mask[idx] === 255) return;
-      vM[idx] = 1;
-      const b = idx * 4;
-      if (data[b + 3] < 10 || colorDistance2(data[b], data[b + 1], data[b + 2], sr, sg, sb) <= tol2)
-        qM.push(idx);
-    };
-
-    enqM(p.x, p.y);
-    while (qM.length) {
-      const idx = qM.pop();
-      mask[idx] = 255;
-      const x = idx % w, y = (idx / w) | 0;
-      if (x > 0)         enqM(x - 1, y);
-      if (x < w - 1)     enqM(x + 1, y);
-      if (y > 0)         enqM(x, y - 1);
-      if (y < h - 1)     enqM(x, y + 1);
-      if (x > 0     && y > 0)     enqM(x - 1, y - 1);
-      if (x < w - 1 && y > 0)     enqM(x + 1, y - 1);
-      if (x > 0     && y < h - 1) enqM(x - 1, y + 1);
-      if (x < w - 1 && y < h - 1) enqM(x + 1, y + 1);
-    }
-  }
-
-  // ── Áp mask với Gaussian smooth edges ─────────────────────────────────────
-  // feather = 0  → sigma 0.5 (chỉ anti-alias sub-pixel, không xóa mất viền)
-  // feather > 0  → sigma = feather (viền mềm tùy chỉnh)
-  const sigma   = feather > 0 ? feather : 0.5;
-  const blurred = gaussianBlur(mask, w, h, sigma);
-  for (let i = 0; i < n; i++) {
-    data[i * 4 + 3] = Math.round(data[i * 4 + 3] * (1 - blurred[i] / 255));
-  }
-}
-
-
-// Redmean perceptual colour distance – https://www.compuphase.com/cmetric.htm
-// Range: 0 to ≈ 585 225 (vs plain RGB Euclidean 0-195 075).
-// Much better at distinguishing reds, greens, blues from similar-lightness neighbours.
-function colorDistance2(r1, g1, b1, r2, g2, b2) {
-  const rmean = (r1 + r2) >> 1;
-  const dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
-  return (2 + (rmean >> 8)) * dr * dr + 4 * dg * dg + (2 + ((255 - rmean) >> 8)) * db * db;
-}
-
-// Separable 2-pass Gaussian blur – produces smooth bell-curve feather
-// (much better than box blur which creates rectangular, boxy edges).
-function gaussianBlur(mask, w, h, sigma) {
-  const radius = Math.ceil(sigma * 3);
-  const ksize  = radius * 2 + 1;
-  const kernel = new Float32Array(ksize);
-  let ksum = 0;
-  for (let i = 0; i < ksize; i++) {
-    const x = i - radius;
-    kernel[i] = Math.exp(-(x * x) / (2 * sigma * sigma));
-    ksum += kernel[i];
-  }
-  for (let i = 0; i < ksize; i++) kernel[i] /= ksum;
-
-  const tmp = new Float32Array(w * h);
-  const out = new Float32Array(w * h);
-
-  // Horizontal pass
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let v = 0;
-      for (let k = 0; k < ksize; k++) {
-        const nx = Math.min(w - 1, Math.max(0, x + k - radius));
-        v += mask[y * w + nx] * kernel[k];
-      }
-      tmp[y * w + x] = v;
-    }
-  }
-
-  // Vertical pass
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let v = 0;
-      for (let k = 0; k < ksize; k++) {
-        const ny = Math.min(h - 1, Math.max(0, y + k - radius));
-        v += tmp[ny * w + x] * kernel[k];
-      }
-      out[y * w + x] = v;
-    }
-  }
-  return out;
-}
-
 // ─── UI Helpers ───────────────────────────────────────────────────────────────
+function beginJob() {
+  if (activeJob) cancelProcessing(true);
+  activeJob = { cancelled: false, gif: null, ffmpeg: false };
+  el('cancelProcessingBtn').classList.remove('hidden');
+  return activeJob;
+}
+
+function finishJob(job) {
+  if (activeJob === job) {
+    activeJob = null;
+    el('cancelProcessingBtn').classList.add('hidden');
+  }
+}
+
+function cancelProcessing(silent = false) {
+  const job = activeJob;
+  if (!job) return;
+  job.cancelled = true;
+  if (job.gif) job.gif.abort();
+  if (job.cleanup) job.cleanup();
+  if (job.ffmpeg && ffmpegInstance) {
+    ffmpegInstance.terminate();
+    ffmpegInstance = null;
+    ffmpegLoaded = false;
+  }
+  activeJob = null;
+  progressSection.classList.add('hidden');
+  el('cancelProcessingBtn').classList.add('hidden');
+  [processBtn, img2gifConvertBtn, videoToGifConvertBtn, frameEditorExportBtn, editVideoBtn, muteVideoBtn].forEach(btn => { if (btn) btn.disabled = false; });
+  if (!silent) showToast(currentLang === 'vi' ? 'Đã hủy xử lý.' : 'Processing cancelled.', 'info');
+}
+
+el('cancelProcessingBtn').addEventListener('click', () => cancelProcessing());
+
 function updateProgress(pct, label) {
   progressFill.style.width = pct + '%';
   progressPct.textContent  = pct + '%';
@@ -2688,6 +3319,10 @@ function updateProgress(pct, label) {
 }
 
 function resetAll() {
+  if (activeJob) cancelProcessing(true);
+  batchFiles = [];
+  staticResultType = 'image/png';
+  setTransformSource(0, 0);
   currentFile = null;
   superGif    = null;
   isStaticImage = false;
@@ -2698,8 +3333,17 @@ function resetAll() {
   customSeeds = [];
   if (sourceBlobUrl) { URL.revokeObjectURL(sourceBlobUrl); sourceBlobUrl = null; }
   if (resultBlobUrl) { URL.revokeObjectURL(resultBlobUrl); resultBlobUrl = null; }
-  if (lastStaticProcessedUrl) { URL.revokeObjectURL(lastStaticProcessedUrl); lastStaticProcessedUrl = null; }
   if (videoToGifUrl) { URL.revokeObjectURL(videoToGifUrl); videoToGifUrl = null; }
+  if (editedVideoBlobUrl) { URL.revokeObjectURL(editedVideoBlobUrl); editedVideoBlobUrl = null; }
+  editedVideoName = '';
+  editVideoClips = [];
+  resetJoinPreview();
+  editClipRanges.clear();
+  timelineLoadToken++;
+  timelineMedia.clear();
+  timelineMediaFailed.clear();
+  el('editTimelineFrames').replaceChildren();
+  editVideoMode = 'trim';
   videoToGifFile = null;
   // Remove any helper SuperGif img elements
   document.querySelectorAll('img[rel\\:animated_src]').forEach(el => el.remove());
@@ -2727,7 +3371,7 @@ function resetAll() {
   lastProcessedFrames = null;
   currentZoom = 'fit';
   zoomNumeric = 1;
-  document.querySelector('.app-wrapper')?.classList.remove('frame-editor-mode');
+  q('.app-wrapper')?.classList.remove('frame-editor-mode');
   if (frameEditorSection) frameEditorSection.classList.add('hidden');
   if (previewRow) previewRow.style.display = '';
   if (controlsPanel) controlsPanel.style.display = '';
@@ -2742,6 +3386,10 @@ function resetAll() {
     resultVideo.classList.add('hidden');
   }
   muteVideoBtn.disabled = true;
+  editVideoBtn.disabled = true;
+  el('editVideoFileName').textContent = '';
+  editClipList.replaceChildren();
+  setEditVideoMode('trim');
   muteVideoFileName.textContent = '';
   muteVideoStatus.textContent = '';
   workspace.classList.add('hidden');
@@ -2760,6 +3408,14 @@ function resetAll() {
 }
 
 function downloadResult() {
+  if (currentTab === 'editVideo') {
+    if (!editedVideoBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = editedVideoBlobUrl;
+    a.download = editedVideoName || 'edited_video.mp4';
+    a.click();
+    return;
+  }
   if (currentTab === 'muteVideo') {
     if (!mutedVideoBlobUrl) return;
     const a = document.createElement('a');
@@ -2793,7 +3449,8 @@ function downloadResult() {
 
   else if (isStaticImage) {
     const baseName = currentFile ? currentFile.name.replace(/\.[^/.]+$/, '') : 'result';
-    a.download = baseName + '_no_bg.png';
+    const ext = staticResultType === 'image/webp' ? 'webp' : staticResultType === 'image/jpeg' ? 'jpg' : 'png';
+    a.download = `${baseName}_no_bg.${ext}`;
   } else {
     const baseName = currentFile ? currentFile.name.replace(/\.gif$/i, '') : 'result';
     a.download = baseName + '_no_bg.gif';
@@ -2820,12 +3477,12 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function showToast(msg, type = 'info') {
-  document.querySelector('.toast')?.remove();
+  q('.toast')?.remove();
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `<span>${msg}</span>`;
   document.body.appendChild(toast);
-  if (!document.getElementById('toast-styles')) {
+  if (!el('toast-styles')) {
     const s = document.createElement('style');
     s.id = 'toast-styles';
     s.textContent = `
@@ -2849,7 +3506,7 @@ function showToast(msg, type = 'info') {
 
 // ─── Dynamic Interactive Canvas Scene ─────────────────────────────────────────
 (function initDynamicBackground() {
-  const canvas = document.getElementById('bgCanvas');
+  const canvas = el('bgCanvas');
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
@@ -2970,3 +3627,5 @@ function showToast(msg, type = 'info') {
 
 // Initialize default language
 setLanguage(currentLang);
+
+}

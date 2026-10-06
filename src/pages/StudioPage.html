@@ -1,0 +1,782 @@
+<div class="app-wrapper">
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon" title="MediaStudio">
+          <!-- Multimedia Studio Icon: Film Reel + Play + Spark -->
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2.5" y="3.5" width="19" height="17" rx="3.5" stroke="currentColor" stroke-width="2" />
+            <path d="M7 3.5v3M17 3.5v3M7 17.5v3M17 17.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="currentColor" />
+          </svg>
+        </div>
+        <span class="logo-text">Media<span class="accent">Studio</span></span>
+      </div>
+      <div class="lang-picker-wrap" id="langPickerWrap">
+        <button type="button" class="lang-picker-trigger" id="langPickerTrigger" aria-haspopup="listbox" aria-expanded="false">
+          <img class="lang-flag" id="langPickerFlag" src="https://flagcdn.com/w20/gb.png" srcset="https://flagcdn.com/w40/gb.png 2x" alt="English" width="20" height="14">
+          <span class="lang-name" id="langPickerName">English</span>
+          <svg class="lang-caret" viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.937a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.061z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="lang-dropdown" id="langDropdown" role="listbox" aria-label="Select language">
+          <button type="button" class="lang-option active" data-lang="en" role="option">
+            <img src="https://flagcdn.com/w20/gb.png" srcset="https://flagcdn.com/w40/gb.png 2x" alt="" width="20" height="14"><span>English</span>
+          </button>
+          <button type="button" class="lang-option" data-lang="vi" role="option">
+            <img src="https://flagcdn.com/w20/vn.png" srcset="https://flagcdn.com/w40/vn.png 2x" alt="" width="20" height="14"><span>Tiếng Việt</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1 class="hero-title" data-i18n="heroTitle">All-in-One Image, GIF & Video Processing in Browser</h1>
+      <p class="hero-sub" data-i18n="heroSub">Background Removal · Frame-by-frame Editor · Video to GIF · Mute Video · 100% Local</p>
+    </section>
+
+    <div class="tabs-container" id="tabsContainer" style="display: none;">
+      <button class="tab-btn active" id="tabBgRemove" data-i18n="tabBgRemove">Remove Background</button>
+      <button class="tab-btn" id="tabFrameEditor" style="display:none" data-i18n="tabFrameEditor">Frame Editor</button>
+      <button class="tab-btn" id="tabImgToGif" data-i18n="tabImgToGif">Images to GIF</button>
+      <button class="tab-btn" id="tabVideoToGif" data-i18n="tabVideoToGif">Video to GIF</button>
+      <button class="tab-btn" id="tabEditVideo" data-i18n="tabEditVideo">Edit Video</button>
+      <button class="tab-btn" id="tabMuteVideo" data-i18n="tabMuteVideo">Mute Video</button>
+    </div>
+
+    <main class="main-content">
+      <div class="upload-section" id="uploadSection">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="image/*,video/*" multiple hidden />
+          <div class="drop-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2.5" />
+              <path d="M24 28l8-8 8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path d="M32 20v20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M20 44h24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <p class="drop-title" data-i18n="dropTitle">Drag & drop image, GIF, or video here</p>
+          <p class="drop-sub" data-i18n="dropSub">or</p>
+          <button class="btn-browse" id="browseBtn" onclick="document.getElementById('fileInput').click()" data-i18n="browseBtn">Choose Image / GIF / Video</button>
+          <p class="drop-info" data-i18n="dropInfo">Supports JPG, PNG, WEBP, GIF, MP4, WebM, MOV · Processed right in your browser</p>
+        </div>
+      </div>
+
+      <div class="workspace hidden" id="workspace">
+        <div class="preview-row" id="previewRow">
+          <div class="preview-card">
+            <div class="preview-label"><span class="dot dot-blue"></span> <span data-i18n="previewOriginal">Original</span></div>
+            <div class="canvas-wrap checkered" id="originalWrap" style="cursor: crosshair;"
+              data-i18n-title="originalWrapTitle" title="Click on trapped background area to remove">
+              <img id="originalImg" alt="Original GIF" />
+            </div>
+            <div class="preview-meta" id="originalMeta"></div>
+            <p id="manualSeedHint"
+              style="font-size: 11.5px; color: #8892b0; margin-top: 8px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                <path fill-rule="evenodd"
+                  d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                  clip-rule="evenodd" />
+              </svg>
+              <span data-i18n="manualSeedHintText">Click on enclosed background areas to remove manually</span>
+            </p>
+          </div>
+
+          <div class="arrow-divider">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </div>
+
+          <div class="preview-card">
+            <div class="preview-label"><span class="dot dot-green"></span> <span data-i18n="previewResult">Result</span></div>
+            <div class="canvas-wrap checkered" id="resultWrap">
+              <div class="placeholder-result" id="placeholderResult">
+                <p data-i18n-html="placeholderBgRemove">Click <strong>Remove Background</strong> to see result</p>
+              </div>
+              <img id="resultImg" class="hidden" alt="Result GIF" />
+              <video id="resultVideo" controls playsinline class="hidden"
+                style="width:100%; height:100%; object-fit:contain; border-radius:12px;"></video>
+            </div>
+            <div class="preview-meta" id="resultMeta"></div>
+          </div>
+        </div>
+
+        <div class="controls-panel" id="controlsPanel">
+          <!-- Background Removal Controls -->
+          <div id="bgControls">
+            <div class="controls-grid">
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  <span data-i18n="bgColorLabel">Background color to remove</span>
+                </label>
+                <div class="color-picker-wrap">
+                  <input type="color" id="bgColor" value="#ffffff" />
+                  <span class="color-value" id="colorValue">#ffffff</span>
+                  <button class="btn-eyedrop" id="eyedropBtn" data-i18n-title="eyedropBtnTitle" title="Pick color from image">
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                      <path
+                        d="M5.5 2a.5.5 0 01.354.146l7 7a.5.5 0 010 .708l-7 7a.5.5 0 01-.708-.708L11.793 9.5 5.146 2.854A.5.5 0 015.5 2z" />
+                      <path fill-rule="evenodd"
+                        d="M11.854 2.646l5.5 5.5a.5.5 0 010 .708l-5.5 5.5a.5.5 0 01-.708-.708L16.293 8.5l-4.647-4.646a.5.5 0 01.708-.708z"
+                        clip-rule="evenodd" />
+                    </svg>
+                    <span data-i18n="eyedropBtn">Pick Color</span>
+                  </button>
+                </div>
+                <p class="hint-text" id="eyedropHint" style="display:none" data-i18n="eyedropHint">Click on original image to pick background color</p>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+                  </svg>
+                  <span data-i18n="toleranceLabel">Tolerance:</span> <span id="toleranceVal">20</span>
+                </label>
+                <input type="range" id="toleranceSlider" min="0" max="128" value="20" class="range-slider" />
+                <div class="range-labels"><span data-i18n="tolerancePrecise">Precise</span><span data-i18n="toleranceWider">Wider</span></div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  <span data-i18n="featherLabel">Feather edge:</span> <span id="featherVal">2</span>px
+                </label>
+                <input type="range" id="featherSlider" min="0" max="10" value="2" class="range-slider" />
+                <div class="range-labels"><span data-i18n="featherSharp">Sharp</span><span data-i18n="featherSmooth">Smooth</span></div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  <span data-i18n="speedLabel">GIF Speed:</span> <span id="speedVal">1.0</span>x
+                </label>
+                <input type="range" id="speedSlider" min="0.25" max="3" value="1" step="0.25" class="range-slider" />
+                <div class="range-labels"><span data-i18n="speedSlow">Slow</span><span data-i18n="speedFast">Fast</span></div>
+              </div>
+
+              <div class="control-group" id="compressGroup">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0V6.414l-2.293-2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 011.414 1.414L6.414 15H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 011.414-1.414L15 13.586V12a1 1 0 011-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  <span data-i18n="compressLabel">Compress GIF:</span> <span id="compressVal">No compression</span>
+                </label>
+                <input type="range" id="compressSlider" min="0" max="4" value="0" step="1" class="range-slider" />
+                <div class="range-labels"><span data-i18n="compressHighQuality">High Quality</span><span data-i18n="compressSmallSize">Small Size</span></div>
+                <p class="hint-text" id="compressHint" style="margin-top: 4px;" data-i18n="compressHint">100% size · Maximum quality (recommended for white/solid backgrounds)</p>
+              </div>
+              <div class="control-group" id="staticFormatGroup">
+                <label class="control-label" for="staticExportFormat" data-i18n="staticExportLabel">Image output format</label>
+                <select id="staticExportFormat" class="text-input">
+                  <option value="image/png" data-i18n="staticPngOption">PNG (transparent)</option>
+                  <option value="image/webp" data-i18n="staticWebpOption">WebP (transparent)</option>
+                  <option value="image/jpeg" data-i18n="staticJpegOption">JPEG (white background)</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="batchActions" class="batch-actions hidden">
+              <span id="batchCount"></span>
+              <button type="button" class="btn-secondary" id="batchExportBtn" data-i18n="batchExportBtn">Remove backgrounds and download ZIP</button>
+              <p class="hint-text" data-i18n="batchHint">Uses the background color, tolerance and feather above. Batch images keep their original dimensions and export as PNG.</p>
+            </div>
+
+            <div class="actions" id="mainActions">
+              <button class="btn-secondary" id="resetBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span data-i18n="chooseAnotherFile">Choose another file</span>
+              </button>
+              <button class="btn-primary" id="processBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span id="processBtnText" data-i18n="processBtnText">Remove Background</span>
+              </button>
+            </div>
+          </div> <!-- End bgControls -->
+
+
+
+          <!-- Image to GIF Controls -->
+          <div id="imgToGifControls" class="hidden">
+            <!-- Mode Switcher -->
+            <div class="img2gif-mode-tabs">
+              <button class="img2gif-mode-tab active" id="img2gifModeOriginal">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/></svg>
+                <span data-i18n="img2gifModeOriginal">From Original Image</span>
+              </button>
+              <button class="img2gif-mode-tab" id="img2gifModeMulti">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/></svg>
+                <span data-i18n="img2gifModeMulti">Add Multiple Images</span>
+              </button>
+            </div>
+
+            <!-- Mode 1: From Original Image -->
+            <div id="img2gifOriginalMode">
+              <div class="img2gif-from-original-card" id="img2gifOriginalPreviewCard">
+                <div class="img2gif-original-preview">
+                  <img id="img2gifOriginalThumb" src="" alt="Original" />
+                </div>
+                <div class="img2gif-original-info">
+                  <p id="img2gifOriginalName" style="font-weight:600; font-size:13px; color:var(--text-primary); margin:0 0 4px;"></p>
+                  <p id="img2gifOriginalDims" style="font-size:12px; color:var(--text-secondary); margin:0;"></p>
+                </div>
+              </div>
+              <div class="img2gif-no-original hidden" id="img2gifNoOriginal">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" style="opacity:0.4;">
+                  <rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2"/>
+                  <path d="M4 34l10-10 7 7 8-10 15 13" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                <p data-i18n="img2gifNoOriginalHint">No image loaded yet. Please load a static image first.</p>
+              </div>
+            </div>
+
+            <!-- Mode 2: Multiple Images Upload -->
+            <div id="img2gifMultiMode" class="hidden">
+              <div class="img2gif-upload-area" id="img2gifUploadArea">
+                <input type="file" id="img2gifFileInput" accept="image/*" multiple hidden />
+                <div class="img2gif-drop-zone" id="img2gifDropZone">
+                  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+                    <rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M4 34l10-10 7 7 8-10 15 13" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                    <circle cx="15" cy="20" r="3" stroke="currentColor" stroke-width="2" />
+                  </svg>
+                  <p style="margin:8px 0 4px; font-weight:600; color: #c4b5fd;" data-i18n="img2gifDropTitle">Drag &amp; drop multiple images here</p>
+                  <p style="font-size:12px; color:#8892b0; margin:0 0 10px;" data-i18n="img2gifDropSub">Supports PNG, JPG, JPEG, WEBP, BMP...</p>
+                  <button class="btn-browse" onclick="document.getElementById('img2gifFileInput').click()"
+                    style="font-size:13px; padding:8px 18px;" data-i18n="img2gifBrowseBtn">Choose Images</button>
+                </div>
+                <div class="img2gif-thumb-list" id="img2gifThumbList"></div>
+              </div>
+            </div>
+
+            <div class="controls-grid" style="margin-top: 16px;">
+              <div class="control-group">
+                <label class="control-label"><span data-i18n="img2gifDelayLabel">Delay per image:</span> <span id="img2gifDelayVal">500</span> ms</label>
+                <input type="range" id="img2gifDelaySlider" min="50" max="2000" value="500" step="50"
+                  class="range-slider" />
+                <div class="range-labels"><span data-i18n="speedFast">Fast</span><span data-i18n="speedSlow">Slow</span></div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label" data-i18n="img2gifSizeLabel">Export Size</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="img2gifSize" value="original" checked><span data-i18n="img2gifSizeOriginal">Original</span></label>
+                  <label class="effect-radio"><input type="radio" name="img2gifSize" value="0.5"><span data-i18n="img2gifSizeHalf">Scale 50%</span></label>
+                  <label class="effect-radio"><input type="radio" name="img2gifSize" value="custom"><span data-i18n="img2gifSizeCustom">Custom</span></label>
+                </div>
+                <div id="img2gifCustomSizeWrap"
+                  style="display:none; margin-top:8px; gap:8px; align-items:center;">
+                  <input type="number" id="img2gifCustomW" placeholder="Width (px)" data-i18n-placeholder="img2gifWidthPlaceholder" class="text-input"
+                    style="width:100px;" />
+                  <span style="color:#8892b0;">×</span>
+                  <input type="number" id="img2gifCustomH" placeholder="Height (px)" data-i18n-placeholder="img2gifHeightPlaceholder" class="text-input"
+                    style="width:100px;" />
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label" data-i18n="img2gifQualityLabel">GIF Quality</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="img2gifQuality" value="10"
+                      checked><span data-i18n="qualityHigh">High</span></label>
+                  <label class="effect-radio"><input type="radio" name="img2gifQuality" value="20"><span data-i18n="qualityMedium">Medium</span></label>
+                  <label class="effect-radio"><input type="radio" name="img2gifQuality" value="40"><span data-i18n="qualityLowLight">Low (Light)</span></label>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label"
+                  style="display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;">
+                  <input type="checkbox" id="img2gifLoop" checked style="width:16px; height:16px;" />
+                  <span style="font-size:13px; font-weight:500;" data-i18n="infiniteLoop">Infinite Loop</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn-secondary" id="img2gifChooseAnotherBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span data-i18n="chooseAnotherFile">Choose another file</span>
+              </button>
+              <button class="btn-secondary" id="img2gifClearBtn" style="display:none;">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span data-i18n="img2gifClearBtn">Clear All</span>
+              </button>
+              <button class="btn-primary" id="img2gifConvertBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span data-i18n="img2gifConvertBtn">Create GIF from Images</span>
+              </button>
+            </div>
+          </div> <!-- End imgToGifControls -->
+
+          <!-- Video to GIF Controls -->
+          <div id="videoToGifControls" class="hidden">
+            <p id="videoToGifFileName" class="hint-text" style="margin-bottom:16px;"></p>
+            <div class="controls-grid" style="margin-top:16px;">
+              <div class="control-group">
+                <label class="control-label"><span data-i18n="videoFpsLabel">Frame Rate (FPS):</span> <span id="videoToGifFpsVal">10</span></label>
+                <input type="range" id="videoToGifFps" min="1" max="20" value="10" class="range-slider" />
+                <div class="range-labels"><span data-i18n="videoFpsLight">Light (5–8)</span><span data-i18n="videoFpsRecommended">Recommended (10)</span><span data-i18n="videoFpsSmooth">Smooth (20)</span></div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label" data-i18n="videoSizeLabel">Export Size & Upscale</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="original" checked><span data-i18n="videoSizeOrig">100% Original</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="2"><span data-i18n="videoSize2x">Upscale 2x (HD)</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="4"><span data-i18n="videoSize4x">Upscale 4x (Super HD)</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="0.5"><span data-i18n="videoSize50">Scale 50%</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifSize" value="0.3"><span data-i18n="videoSize30">Scale 30%</span></label>
+                </div>
+                <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 3px;">
+                  <label class="control-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:0;">
+                    <input type="checkbox" id="videoToGifEnhance" checked style="width:16px;height:16px;accent-color:#a855f7;" />
+                    <span style="font-weight:600;font-size:13px;" data-i18n="videoEnhanceLabel">✨ Tăng độ nét viền & chi tiết (Smart Sharpen)</span>
+                  </label>
+                  <p style="font-size: 11.5px; color: #8892b0; margin: 0 0 0 24px;" data-i18n="videoEnhanceSub">Tự động khử mờ nhòe, tăng độ tương phản đường viền nhân vật 2D</p>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label" data-i18n="videoDurationLabel">Video Segment (Duration)</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="videoToGifDurationMode" value="all" checked><span data-i18n="videoDurationAll">Entire video</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifDurationMode" value="3"><span data-i18n="videoDuration3">First 3 seconds</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifDurationMode" value="5"><span data-i18n="videoDuration5">First 5 seconds</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifDurationMode" value="custom"><span data-i18n="videoDurationCustom">Custom range</span></label>
+                </div>
+                <div id="videoToGifCustomRange" style="display:none; margin-top:10px; align-items:center; gap:8px; font-size:13px; color:var(--text-secondary);">
+                  <span data-i18n="videoRangeFrom">From:</span>
+                  <input type="number" id="videoToGifStartTime" min="0" step="0.5" value="0"
+                    style="width:70px; padding:6px 10px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); text-align:center;">
+                  <span data-i18n="videoRangeTo">s to:</span>
+                  <input type="number" id="videoToGifEndTime" min="0.5" step="0.5" value="3"
+                    style="width:70px; padding:6px 10px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); text-align:center;">
+                  <span>s</span>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label" data-i18n="videoColorLabel">GIF Color Quality</label>
+                <div class="effect-options">
+                  <label class="effect-radio"><input type="radio" name="videoToGifQuality" value="10" checked><span data-i18n="qualityHigh">High</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifQuality" value="20"><span data-i18n="qualityMedium">Medium</span></label>
+                  <label class="effect-radio"><input type="radio" name="videoToGifQuality" value="40"><span data-i18n="qualityLowFast">Low (Fast)</span></label>
+                </div>
+              </div>
+
+              <div class="control-group" style="display:flex; flex-direction:column; justify-content:center;">
+                <label class="control-label" style="display:flex;align-items:center;gap:8px;cursor:pointer; margin-bottom:4px;">
+                  <input type="checkbox" id="videoToGifLoop" checked style="width:16px;height:16px;" />
+                  <span style="font-size:13px;font-weight:500;" data-i18n="infiniteLoop">Infinite Loop</span>
+                </label>
+                <p id="videoToGifEstimate" style="font-size:12px; color:#a78bfa; margin:4px 0 0; font-weight:500;"></p>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn-secondary" id="videoChooseAnotherBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span data-i18n="chooseAnotherFile">Choose another file</span>
+              </button>
+              <button class="btn-primary" id="videoToGifConvertBtn"><span id="videoToGifConvertBtnText" data-i18n="videoConvertBtn">Convert Video to GIF</span></button>
+            </div>
+          </div> <!-- End videoToGifControls -->
+
+          <!-- Video editing controls -->
+          <div id="editVideoControls" class="hidden">
+            <p id="editVideoFileName" class="hint-text video-edit-source"></p>
+            <div class="video-edit-mode-tabs" role="group" aria-label="Video editing mode">
+              <button type="button" class="video-edit-mode active" id="editTrimMode" data-i18n="editTrimMode">Trim video</button>
+              <button type="button" class="video-edit-mode" id="editJoinMode" data-i18n="editJoinMode">Join clips</button>
+            </div>
+
+            <div id="editTrimPanel" class="video-edit-panel">
+              <p class="hint-text" data-i18n="editTimelineHint">Drag the purple handles to select the section to keep. Drag the white playhead to seek.</p>
+              <div class="edit-timeline" id="editTimeline">
+                <div class="edit-timeline-toolbar">
+                  <button type="button" class="edit-timeline-play" id="editTimelinePlay" aria-label="Play video" title="Play video">▶</button>
+                  <span class="edit-timeline-clock"><strong id="editTimelineCurrent">0:00.0</strong> / <span id="editTimelineTotal">0:00.0</span></span>
+                  <div class="edit-timeline-zoom">
+                    <button type="button" id="editTimelineZoomOut" aria-label="Zoom out" title="Zoom out">−</button>
+                    <button type="button" id="editTimelineZoomIn" aria-label="Zoom in" title="Zoom in">+</button>
+                  </div>
+                </div>
+                <div class="edit-timeline-scroll" id="editTimelineScroll">
+                  <div class="edit-timeline-content" id="editTimelineContent">
+                    <div class="edit-timeline-ruler" id="editTimelineRuler"></div>
+                    <div class="edit-timeline-track" id="editTimelineTrack">
+                      <div class="edit-timeline-frames" id="editTimelineFrames"></div>
+                      <div class="edit-timeline-dim edit-timeline-dim-left" id="editTimelineDimLeft"></div>
+                      <div class="edit-timeline-dim edit-timeline-dim-right" id="editTimelineDimRight"></div>
+                      <button type="button" class="edit-timeline-handle edit-timeline-handle-start" id="editTimelineStart" role="slider" aria-label="Trim start" aria-valuemin="0" aria-valuenow="0">‹</button>
+                      <button type="button" class="edit-timeline-handle edit-timeline-handle-end" id="editTimelineEnd" role="slider" aria-label="Trim end" aria-valuemin="0" aria-valuenow="0">›</button>
+                    </div>
+                    <button type="button" class="edit-timeline-playhead" id="editTimelinePlayhead" role="slider" aria-label="Video position" aria-valuemin="0" aria-valuenow="0"><span></span></button>
+                  </div>
+                </div>
+                <div class="edit-timeline-selection"><span id="editTimelineStartLabel">0:00.0</span><span id="editTimelineEndLabel">0:00.0</span></div>
+              </div>
+              <input type="number" id="editStartTime" min="0" step="0.01" value="0" hidden>
+              <input type="number" id="editEndTime" min="0" step="0.01" value="0" hidden>
+              <p id="editTrimSummary" class="video-edit-summary"></p>
+            </div>
+
+            <div id="editJoinPanel" class="video-edit-panel hidden">
+              <p class="hint-text" data-i18n="editJoinTimelineHint">Drag a clip to reorder it. Drag purple edges to trim, or drag the white playhead to seek.</p>
+              <input type="file" id="editJoinInput" accept="video/*" multiple hidden>
+              <button type="button" class="btn-secondary" id="editAddClips" data-i18n="editAddClips">Add video clips</button>
+              <div class="edit-timeline video-edit-join-timeline">
+                <div class="edit-timeline-toolbar">
+                  <button type="button" class="edit-timeline-play" id="editJoinPlay" aria-label="Play joined clips" title="Play joined clips">▶</button>
+                  <span class="edit-timeline-clock"><strong id="editJoinCurrent">0:00.0</strong> / <span id="editJoinTotal">0:00.0</span></span>
+                  <strong class="edit-join-selected" id="editJoinSummary">0:00.0 selected</strong>
+                  <div class="edit-timeline-zoom">
+                    <button type="button" id="editJoinZoomOut" aria-label="Zoom out" title="Zoom out">−</button>
+                    <button type="button" id="editJoinZoomIn" aria-label="Zoom in" title="Zoom in">+</button>
+                  </div>
+                </div>
+                <div class="edit-timeline-scroll" id="editJoinScroll">
+                  <div class="edit-join-content" id="editJoinContent">
+                    <div class="edit-timeline-ruler" id="editJoinRuler"></div>
+                    <div id="editClipList" class="video-edit-clip-list" aria-label="Video clips"></div>
+                    <button type="button" class="edit-timeline-playhead" id="editJoinPlayhead" role="slider" aria-label="Joined video position" aria-valuemin="0" aria-valuenow="0"><span></span></button>
+                  </div>
+                </div>
+                <div class="edit-timeline-selection"><span id="editJoinStartLabel">Start 0:00.0</span><span id="editJoinEndLabel">End 0:00.0</span></div>
+              </div>
+              <p class="hint-text" data-i18n="editJoinNote">Clips are converted to a common MP4 format before joining. This can take a while.</p>
+            </div>
+
+            <div class="actions">
+              <button type="button" class="btn-secondary" id="editChooseAnotherBtn"><span data-i18n="chooseAnotherFile">Choose another file</span></button>
+              <button type="button" class="btn-primary" id="editVideoBtn" disabled><span id="editVideoBtnText" data-i18n="editTrimAction">Trim and export MP4</span></button>
+            </div>
+          </div> <!-- End editVideoControls -->
+
+          <!-- Mute Video Controls -->
+          <div id="muteVideoControls" class="hidden">
+            <p id="muteVideoFileName" class="hint-text" style="margin-bottom:16px;"></p>
+            <div class="controls-grid" style="margin-top:16px;">
+              <div class="control-group">
+                <label class="control-label">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  <span data-i18n="muteLabel">Remove all audio tracks from video</span>
+                </label>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn-secondary" id="muteChooseAnotherBtn">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span data-i18n="chooseAnotherFile">Choose another file</span>
+              </button>
+              <button class="btn-primary" id="muteVideoBtn" disabled>
+                <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                  <path fill-rule="evenodd"
+                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span id="muteVideoBtnText" data-i18n="muteBtn">Mute Video</span>
+              </button>
+              <span id="muteVideoStatus" style="font-size:12px; color:#8892b0; align-self:center;"></span>
+            </div>
+          </div> <!-- End muteVideoControls -->
+
+        </div> <!-- End controlsPanel -->
+
+        <!-- Frame Editor Section -->
+        <div id="frameEditorSection" class="hidden" style="margin-top: 10px;">
+          <!-- Top Toolbar -->
+          <div class="frame-editor-toolbar">
+            <div class="frame-editor-info">
+              <span class="badge" id="frameEditorIndexBadge">Frame 1 / 10</span>
+              <span id="frameEditorDelayBadge" style="font-size: 12px; color: #8892b0;">Delay: 100ms</span>
+              <label class="frame-delay-control"><span data-i18n="frameDelayLabel">Frame delay (ms)</span><input id="frameDelayInput" type="number" min="20" max="60000" step="10" value="100"></label>
+            </div>
+
+            <!-- Tool selector -->
+            <div class="frame-editor-tools">
+              <div class="effect-options" style="margin-top: 0;">
+                <label class="effect-radio">
+                  <input type="radio" name="frameTool" value="wand" checked />
+                  <span data-i18n="frameWandTool">🪄 Wand (Click area)</span>
+                </label>
+                <label class="effect-radio">
+                  <input type="radio" name="frameTool" value="eraser" />
+                  <span data-i18n="frameEraserTool">🖌️ Eraser</span>
+                </label>
+              </div>
+
+              <!-- Wand tolerance (visible when wand is selected) -->
+              <div id="frameWandControls" style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                <span style="color: var(--text-secondary);" data-i18n="toleranceLabel">Tolerance:</span>
+                <input type="range" id="frameTolerance" min="5" max="80" value="30" style="width: 100px;" />
+                <span id="frameToleranceVal" style="font-weight: 600; min-width: 24px;">30</span>
+              </div>
+
+              <!-- Eraser size (visible when eraser is selected) -->
+              <div id="frameEraserControls" style="display: none; align-items: center; gap: 8px; font-size: 13px;">
+                <span style="color: var(--text-secondary);" data-i18n="frameBrushSizeLabel">Brush Size:</span>
+                <input type="range" id="frameBrushSize" min="3" max="50" value="15" style="width: 100px;" />
+                <span id="frameBrushSizeVal" style="font-weight: 600; min-width: 28px;">15px</span>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="frame-editor-actions">
+              <button class="btn-sm btn-secondary" id="frameUndoBtn" data-i18n-title="frameUndoTitle" title="Undo background erase (Ctrl+Z)">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+                  <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span data-i18n="frameUndoBtn">Undo Erase</span>
+              </button>
+              <button class="btn-sm btn-secondary" id="frameApplyAllBtn" data-i18n-title="frameApplyAllTitle" title="Erase this color at the same position across ALL frames">
+                <span data-i18n="frameApplyAllBtn">🌐 Apply to All Frames</span>
+              </button>
+              <button class="btn-sm btn-secondary" id="frameResetBtn" data-i18n-title="frameResetTitle" title="Restore this frame">
+                <span data-i18n="frameResetBtn">Reset Frame</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Canvas Area -->
+          <div class="frame-canvas-container">
+            <!-- Zoom & View controls -->
+            <div class="frame-canvas-header">
+              <div class="frame-zoom-bar">
+                <span class="frame-zoom-title">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                  </svg>
+                  <span data-i18n="frameZoomTitle">Zoom:</span>
+                </span>
+                <div class="frame-zoom-btn-group">
+                  <button type="button" class="btn-zoom-step" id="frameZoomOutBtn" data-i18n-title="frameZoomOutTitle" title="Zoom out (−)">−</button>
+                  <span id="frameZoomVal" class="frame-zoom-val" data-i18n="frameZoomFit">Fit View</span>
+                  <button type="button" class="btn-zoom-step" id="frameZoomInBtn" data-i18n-title="frameZoomInTitle" title="Zoom in (+)">+</button>
+                </div>
+                <div class="frame-zoom-presets">
+                  <button type="button" class="btn-zoom-pill active" data-zoom="fit" data-i18n="frameZoomFit" data-i18n-title="frameZoomFitTitle" title="Auto fit to screen">Fit View</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="1" data-i18n-title="frameZoomOrigTitle" title="Original size 100%">100%</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="1.5">150%</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="2">200%</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="3">300%</button>
+                  <button type="button" class="btn-zoom-pill" data-zoom="4">400%</button>
+                </div>
+              </div>
+              <div class="frame-zoom-tip">
+                <span data-i18n-html="frameZoomTip">💡 Select <strong>Fit View</strong> or <strong>200% - 300%</strong> to easily edit fine details</span>
+              </div>
+            </div>
+
+            <div class="canvas-wrap checkered frame-editor-wrap" id="frameEditorWrap">
+              <canvas id="frameEditorCanvas"></canvas>
+            </div>
+            <div class="frame-nav-controls">
+              <button class="btn-nav" id="framePrevBtn" data-i18n-title="framePrevBtnTitle" title="Previous frame (Left arrow)"><span data-i18n="framePrevBtn">◀ Prev Frame</span></button>
+              <span id="frameCounterNav" style="font-weight: 600; font-size: 13px; color: var(--text-secondary);">1 / 10</span>
+              <button class="btn-nav" id="frameNextBtn" data-i18n-title="frameNextBtnTitle" title="Next frame (Right arrow)"><span data-i18n="frameNextBtn">Next Frame ▶</span></button>
+            </div>
+            <p style="font-size: 12px; color: #8892b0; margin: 8px 0 0; text-align: center;">
+              <span data-i18n-html="frameEditorTip">💡 <strong>Tip:</strong> Click on color area to erase. Hold <strong>Space</strong> and drag to pan when zoomed in.</span>
+            </p>
+          </div>
+
+          <!-- Bottom Timeline Filmstrip -->
+          <div class="frame-filmstrip-section">
+            <div class="frame-filmstrip-header">
+              <div class="frame-filmstrip-title-wrap">
+                <span class="frame-filmstrip-title" data-i18n="frameFilmstripTitle">Frames timeline (Click frame to edit):</span>
+                <span class="hint-text" data-i18n="frameReorderHint">Drag frames to reorder</span>
+                <span id="frameFilmstripCount" class="frame-filmstrip-count"></span>
+              </div>
+              <div class="frame-timeline-actions">
+                <button type="button" class="btn-sm btn-secondary" id="frameRestoreBtn" disabled style="opacity:0.5; pointer-events:none;" data-i18n-title="frameRestoreTitle" title="Restore last deleted frame (Ctrl+Shift+Z)">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                    <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span id="frameRestoreBtnText" data-i18n="frameRestoreBtn">Restore Frame</span>
+                </button>
+                <button type="button" class="btn-sm btn-danger" id="frameDeleteBtn" data-i18n-title="frameDeleteTitle" title="Delete current frame (Delete key)">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                  <span data-i18n="frameDeleteBtn">Delete Frame</span>
+                </button>
+              </div>
+            </div>
+            <div class="frame-filmstrip" id="frameFilmstrip">
+              <!-- Thumbnails generated by JS -->
+            </div>
+          </div>
+
+          <!-- Export Bar -->
+          <div class="actions" style="margin-top: 20px; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 16px;">
+            <button class="btn-secondary" id="frameChooseAnotherBtn">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+              </svg>
+              <span data-i18n="chooseAnotherFile">Choose another file</span>
+            </button>
+            <button class="btn-primary" id="frameEditorExportBtn">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+              <span data-i18n="frameExportBtn">Re-create GIF from Edited Frames</span>
+            </button>
+          </div>
+        </div> <!-- End frameEditorSection -->
+
+        <div class="progress-section hidden" id="progressSection">
+          <div class="progress-header">
+            <span class="progress-label" id="progressLabel" data-i18n="progressLabelDefault">Processing frames...</span>
+            <span class="progress-pct" id="progressPct">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressFill"></div>
+          </div>
+          <div class="frame-info" id="frameInfo"></div>
+          <button type="button" class="btn-secondary hidden" id="cancelProcessingBtn" data-i18n="cancelProcessingBtn">Cancel processing</button>
+        </div>
+
+        <div class="download-section hidden" id="downloadSection">
+          <div class="success-badge">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd" />
+            </svg>
+            <span id="successBadgeText" data-i18n="successBgRemoved">Background removed successfully!</span>
+          </div>
+          <button class="btn-download" id="downloadBtn">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+              <path fill-rule="evenodd"
+                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                clip-rule="evenodd" />
+            </svg>
+            <span id="downloadBtnText" data-i18n="downloadResult">Download Result</span>
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+
+    <section class="features">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="currentColor" opacity="0.15"/>
+            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12 7v1M12 16v1M7 12h1M16 12h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 data-i18n="feat1Title">100% Private</h3>
+        <p data-i18n="feat1Desc">All processing runs entirely in your browser. No files are ever uploaded to any server — your data stays yours.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+            <path d="M13 2L4.09 12.11a1 1 0 00.74 1.67H11l-1 8 8.91-10.11a1 1 0 00-.74-1.67H13l1-8z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.18"/>
+          </svg>
+        </div>
+        <h3 data-i18n="feat2Title">Instant Processing</h3>
+        <p data-i18n="feat2Desc">Optimized frame-by-frame algorithms deliver results in seconds, even for large GIFs and long video clips.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+            <path d="M19.07 4.93l-1.41 1.41M5.34 17.66l-1.41 1.41M20 12h-2M6 12H4M19.07 19.07l-1.41-1.41M5.34 6.34L3.93 4.93" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" stroke-opacity="0.4"/>
+            <path d="M12 2v2M12 20v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 data-i18n="feat3Title">Precise Controls</h3>
+        <p data-i18n="feat3Desc">Dial in the exact result with adjustable tolerance, edge feathering, manual seed points, and compression levels.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+            <rect x="2" y="3" width="20" height="18" rx="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.12"/>
+            <path d="M7 3v3M12 3v3M17 3v3M7 18v3M12 18v3M17 18v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M9.5 9.5l5 3-5 3V9.5z" fill="currentColor"/>
+          </svg>
+        </div>
+        <h3 data-i18n="feat4Title">Multi-Format Support</h3>
+        <p data-i18n="feat4Desc">Works with JPG, PNG, WEBP, GIF, MP4, WebM and MOV. Edit frames, convert video to GIF, or remove audio — all in one place.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 data-i18n="feat5Title">Export Ready</h3>
+        <p data-i18n="feat5Desc">Download transparent GIFs, optimized images, or muted videos instantly — no account or sign-up needed.</p>
+      </div>
+    </section>
+
+
+    <footer class="footer">
+      <p data-i18n="footerText">MediaStudio · Files processed in your browser · Online libraries required</p>
+    </footer>
+  </div>
+
+  <canvas id="eyedropCanvas" style="display:none"></canvas>
+  <video id="videoPlayer" playsinline muted style="display:none"></video>
+  <canvas id="img2gifCanvas" style="display:none"></canvas>
+  <canvas id="videoToGifCanvas" style="display:none"></canvas>

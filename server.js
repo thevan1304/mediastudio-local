@@ -15,41 +15,41 @@ app.use((req, res, next) => {
   next();
 });
 
-// - npm run dev: phục vụ từ thư mục gốc
-// - npm run start: phục vụ từ thư mục dist/
+// Production server for the Vite build. The dev server is started by Vite.
 const distPath = path.join(__dirname, 'dist');
-const isStartMode = process.argv.includes('--dist');
-
-let publicDir = __dirname;
-if (isStartMode) {
-  if (!fs.existsSync(path.join(distPath, 'index.html'))) {
-    console.warn('⚠️ Thư mục dist/ chưa được build. Đang tự động build...');
-    require('./build.js');
-  }
-  publicDir = distPath;
+if (!fs.existsSync(path.join(distPath, 'index.html'))) {
+  console.error('  No build found. Run npm run build first.');
+  process.exit(1);
 }
 
-console.log(`📂 Đang phục vụ static files từ: ${publicDir}`);
-app.use(express.static(publicDir));
+app.use(express.static(distPath));
 
 // Fallback tất cả route về index.html
 app.use((req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'));
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
 function startServer(port) {
   const server = app.listen(port, () => {
-    console.log(`\n🎉 Server đang chạy thành công tại: http://localhost:${port}`);
-    console.log(`   - Nhấn Ctrl + C để dừng server\n`);
+    const color = process.stdout.isTTY && !process.env.NO_COLOR;
+    const style = (code, value) => color ? `\x1b[${code}m${value}\x1b[0m` : value;
+    const title = style('1;36', 'MediaStudio');
+    const mode = style('2', 'Production');
+    const url = style('1;32', `http://localhost:${port}`);
+
+    console.log(`\n  ${title}  ${mode}`);
+    console.log(`  ${style('2', '────────────────────────────────────────')}`);
+    console.log(`  ${style('2', 'Local')}  ${url}`);
+    console.log(`  ${style('2', 'Stop')}   Ctrl + C\n`);
   });
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       const nextPort = port + 1;
-      console.warn(`⚠️ Cổng ${port} đang bận, tự động chuyển sang cổng ${nextPort}...`);
+      console.warn(`  Port ${port} is in use. Trying ${nextPort}...`);
       startServer(nextPort);
     } else {
-      console.error('Lỗi khởi động server:', err);
+      console.error('Failed to start server:', err);
     }
   });
 }

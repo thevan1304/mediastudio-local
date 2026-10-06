@@ -1,24 +1,28 @@
 {
-  "name": "gif-bg-remover",
+  "name": "mediastudio-local",
   "version": "1.0.0",
   "description": "GIF Background Remover & Video Studio",
   "main": "server.js",
   "scripts": {
-    "dev": "node --watch server.js --dev",
-    "build": "node build.js",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
     "start": "node server.js --dist",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "preview": "vite preview"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "axios": "^1.18.1",
     "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "form-data": "^4.0.6",
-    "multer": "^2.2.0"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3"
   }
 }
