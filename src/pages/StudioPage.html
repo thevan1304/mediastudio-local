@@ -353,9 +353,11 @@
             <p id="videoToGifFileName" class="hint-text" style="margin-bottom:16px;"></p>
             <div class="controls-grid" style="margin-top:16px;">
               <div class="control-group">
-                <label class="control-label"><span data-i18n="videoFpsLabel">Frame Rate (FPS):</span> <span id="videoToGifFpsVal">10</span></label>
-                <input type="range" id="videoToGifFps" min="1" max="20" value="10" class="range-slider" />
-                <div class="range-labels"><span data-i18n="videoFpsLight">Light (5–8)</span><span data-i18n="videoFpsRecommended">Recommended (10)</span><span data-i18n="videoFpsSmooth">Smooth (20)</span></div>
+                <label class="control-label"><span data-i18n="videoFpsLabel">Frame Rate (FPS):</span> <span id="videoToGifFpsVal">20</span></label>
+                <input type="range" id="videoToGifFps" min="10" max="30" step="10" value="20" class="range-slider" />
+                <div class="range-labels"><span data-i18n="videoFpsLight">Light (10)</span><span data-i18n="videoFpsRecommended">Recommended (20)</span><span data-i18n="videoFpsSmooth">Smooth (30)</span></div>
+                <label class="control-label video-original-frames-option"><input type="checkbox" id="videoToGifOriginalFrames"><span data-i18n="videoOriginalFrames">Original video frames</span></label>
+                <p class="hint-text" data-i18n="videoOriginalFramesHint">Keep every source frame and its timing. GIFs can be many times larger than MP4 videos.</p>
               </div>
 
               <div class="control-group">
@@ -410,6 +412,7 @@
                   <span style="font-size:13px;font-weight:500;" data-i18n="infiniteLoop">Infinite Loop</span>
                 </label>
                 <p id="videoToGifEstimate" style="font-size:12px; color:#a78bfa; margin:4px 0 0; font-weight:500;"></p>
+                <button type="button" id="videoToGifCompactBtn" class="btn-secondary video-compact-btn" data-i18n="videoCompactBtn">Smaller GIF settings</button>
               </div>
             </div>
             <div class="actions">
@@ -541,6 +544,10 @@
 
         <!-- Frame Editor Section -->
         <div id="frameEditorSection" class="hidden" style="margin-top: 10px;">
+          <div id="frameEditorLoadingStatus" class="frame-editor-loading hidden" role="status" aria-live="polite">
+            <span id="frameEditorLoadingLabel"></span>
+            <progress id="frameEditorLoadingBar" max="100" value="0"></progress>
+          </div>
           <!-- Top Toolbar -->
           <div class="frame-editor-toolbar">
             <div class="frame-editor-info">
@@ -677,7 +684,7 @@
           </div>
 
           <!-- Export Bar -->
-          <div class="actions" style="margin-top: 20px; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 16px;">
+          <div class="actions" style="margin-top: 20px; margin-bottom: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
             <button class="btn-secondary" id="frameChooseAnotherBtn">
               <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
                 <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />

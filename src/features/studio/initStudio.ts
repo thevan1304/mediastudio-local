@@ -3,6 +3,7 @@ import { chooseGifTransparencyKey, applyGifTransparencyKey } from '../gif/transp
 import { I18N, LANGS } from '../../locales/messages';
 import { removeBackground } from '../background/removeBackground';
 import { trimVideo, joinVideos, type VideoExportOptions } from '../video/editVideo';
+import { convertOriginalFramesToGif } from '../video/originalFramesGif';
 
 export function initStudio(): void {
 const el = (id: string): any => document.getElementById(id);
@@ -98,11 +99,16 @@ const frameFilmstrip        = el('frameFilmstrip');
 const frameFilmstripCount   = el('frameFilmstripCount');
 const frameChooseAnotherBtn = el('frameChooseAnotherBtn');
 const frameEditorExportBtn  = el('frameEditorExportBtn');
+const frameEditorLoadingStatus = el('frameEditorLoadingStatus');
+const frameEditorLoadingLabel = el('frameEditorLoadingLabel');
+const frameEditorLoadingBar = el('frameEditorLoadingBar');
 const frameZoomOutBtn       = el('frameZoomOutBtn');
 const frameZoomInBtn        = el('frameZoomInBtn');
 const frameZoomVal          = el('frameZoomVal');
 
 let gifFrames = [];
+let gifFramesInitialized = false;
+let editedGifOutputBytes = null;
 let deletedFramesStack = [];
 let activeFrameIndex = 0;
 let currentFrameTool = 'wand';
@@ -150,6 +156,7 @@ const muteVideoControls   = el('muteVideoControls');
 const videoToGifFileName  = el('videoToGifFileName');
 const videoToGifFps       = el('videoToGifFps');
 const videoToGifFpsVal    = el('videoToGifFpsVal');
+const videoToGifOriginalFrames = el('videoToGifOriginalFrames') as HTMLInputElement;
 const videoToGifLoop      = el('videoToGifLoop');
 const videoToGifConvertBtn = el('videoToGifConvertBtn');
 const videoChooseAnotherBtn = el('videoChooseAnotherBtn');
@@ -228,6 +235,11 @@ function setLanguage(lang) {
   });
 
   applyI18nToDOM();
+  if (currentTab === 'frameEditor' && editedGifOutputBytes !== null && !downloadSection.classList.contains('hidden')) {
+    successBadgeText.textContent = `${t('successFrameExport')} · ${formatBytes(editedGifOutputBytes)}`;
+    downloadBtnText.textContent = t('downloadEditedGif');
+  }
+  videoToGifFpsVal.textContent = videoToGifOriginalFrames.checked ? t('videoOriginalFramesShort') : videoToGifFps.value;
   setEditVideoMode(editVideoMode);
   renderEditVideoClips();
   updateEditTrimSummary();
@@ -552,7 +564,8 @@ switchImg2gifMode('original');
 img2gifDelaySlider.addEventListener('input', () => { img2gifDelayVal.textContent = img2gifDelaySlider.value; });
 function updateVideoToGifEstimate() {
   if (!videoPlayer || !Number.isFinite(videoPlayer.duration) || videoPlayer.duration <= 0) return;
-  const fps = Number(videoToGifFps.value) || 10;
+  const originalFrames = videoToGifOriginalFrames.checked;
+  const fps = Number(videoToGifFps.value) || 20;
   let start = 0;
   let end = videoPlayer.duration;
   
@@ -585,12 +598,29 @@ function updateVideoToGifEstimate() {
   const estBytes = frames * (w * h * 0.42);
   
   if (videoToGifEstimate) {
-    videoToGifEstimate.textContent = t('videoEstimate', { frames, w, h, size: formatBytes(estBytes) });
+    videoToGifEstimate.textContent = originalFrames
+      ? t('videoOriginalEstimate', { w, h })
+      : t('videoEstimate', { frames, w, h, size: formatBytes(estBytes) });
   }
 }
 
 videoToGifFps.addEventListener('input', () => {
   videoToGifFpsVal.textContent = videoToGifFps.value;
+  updateVideoToGifEstimate();
+});
+videoToGifOriginalFrames.addEventListener('change', () => {
+  videoToGifFps.disabled = videoToGifOriginalFrames.checked;
+  videoToGifFpsVal.textContent = videoToGifOriginalFrames.checked ? t('videoOriginalFramesShort') : videoToGifFps.value;
+  updateVideoToGifEstimate();
+});
+el('videoToGifCompactBtn')?.addEventListener('click', () => {
+  videoToGifOriginalFrames.checked = false;
+  videoToGifFps.disabled = false;
+  videoToGifFps.value = '10';
+  videoToGifFpsVal.textContent = '10';
+  (q('input[name="videoToGifSize"][value="0.5"]') as HTMLInputElement).checked = true;
+  (q('input[name="videoToGifQuality"][value="20"]') as HTMLInputElement).checked = true;
+  (el('videoToGifEnhance') as HTMLInputElement).checked = false;
   updateVideoToGifEstimate();
 });
 el('videoToGifEnhance')?.addEventListener('change', updateVideoToGifEstimate);
@@ -707,6 +737,8 @@ function loadFile(file, preserveBatch = false) {
   if (!preserveBatch) batchFiles = [];
   if (activeJob) cancelProcessing(true);
   gifFrames = [];
+  gifFramesInitialized = false;
+  editedGifOutputBytes = null;
   deletedFramesStack = [];
   lastProcessedFrames = null;
   activeFrameIndex = 0;
@@ -1330,12 +1362,29 @@ batchExportBtn.addEventListener('click', async () => {
   }
 });
 
+function showVideoToGifResult(blob: Blob, frameDescription: string, width: number, height: number): void {
+  if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
+  resultBlobUrl = URL.createObjectURL(blob);
+  resultVideo.classList.add('hidden');
+  resultImg.src = resultBlobUrl;
+  resultImg.classList.remove('hidden');
+  placeholderResult.style.display = 'none';
+  resultMeta.textContent = `GIF · ${frameDescription} · ${width}×${height} · ${formatBytes(blob.size)}`;
+  downloadBtnText.textContent = t('downloadGif');
+  if (successBadgeText) successBadgeText.textContent = t('successVideoToGif');
+  downloadSection.classList.remove('hidden');
+  progressSection.classList.add('hidden');
+  videoToGifConvertBtn.disabled = false;
+  showToast(t('toastVideoToGifSuccess'), 'success');
+}
+
 videoToGifConvertBtn.addEventListener('click', async () => {
   if (!videoToGifFile || !Number.isFinite(videoPlayer.duration)) {
     showToast(t('toastSelectVideoFirst'), 'error');
     return;
   }
-  const fps = Number(videoToGifFps.value) || 10;
+  const originalFrames = videoToGifOriginalFrames.checked;
+  const fps = Number(videoToGifFps.value) || 20;
 
   // Calculate start, end, and duration
   let startTime = 0;
@@ -1353,7 +1402,7 @@ videoToGifConvertBtn.addEventListener('click', async () => {
 
   const duration = Math.max(0.1, endTime - startTime);
   const frameCount = Math.ceil(duration * fps);
-  if (frameCount > 1200 && !confirm(t('confirmManyFrames', { count: frameCount }))) return;
+  if (!originalFrames && frameCount > 1200 && !confirm(t('confirmManyFrames', { count: frameCount }))) return;
 
   const sizeChoice = q('input[name="videoToGifSize"]:checked')?.value || 'original';
   let scale = 1;
@@ -1367,6 +1416,34 @@ videoToGifConvertBtn.addEventListener('click', async () => {
   const width = Math.max(1, Math.round(crop.outW * scale));
   const height = Math.max(1, Math.round(crop.outH * scale));
   const quality = Number(q('input[name="videoToGifQuality"]:checked').value);
+  if (originalFrames) {
+    const job = beginJob();
+    job.ffmpeg = true;
+    videoToGifConvertBtn.disabled = true;
+    progressSection.classList.remove('hidden');
+    downloadSection.classList.add('hidden');
+    try {
+      const ffmpeg = await loadFFmpeg();
+      if (job.cancelled) return;
+      const blob = await convertOriginalFramesToGif(ffmpeg, videoToGifFile, {
+        start: startTime, end: endTime, width, height, quality,
+        enhance: enhanceEnabled, loop: videoToGifLoop.checked,
+      }, (percent, phase) => updateProgress(percent, t(phase === 'palette' ? 'videoOriginalPalette' : 'videoOriginalEncoding')), () => job.cancelled);
+      if (job.cancelled) return;
+      finishJob(job);
+      showVideoToGifResult(blob, t('videoOriginalFramesShort'), width, height);
+    } catch (err) {
+      if (!job.cancelled) {
+        console.error(err);
+        showToast(t('toastVideoToGifError', { err: err.message || err }), 'error');
+      }
+      progressSection.classList.add('hidden');
+    } finally {
+      finishJob(job);
+      videoToGifConvertBtn.disabled = false;
+    }
+    return;
+  }
   const job = beginJob();
   progressSection.classList.remove('hidden');
   updateProgress(0, currentLang === 'vi' ? 'Đang chuẩn bị...' : 'Preparing...');
@@ -1403,20 +1480,8 @@ videoToGifConvertBtn.addEventListener('click', async () => {
     gif.on('finished', blob => {
       if (job.cancelled) return;
       finishJob(job);
-      if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
-      resultBlobUrl = URL.createObjectURL(blob);
-      resultVideo.classList.add('hidden');
-      resultImg.src = resultBlobUrl;
-      resultImg.classList.remove('hidden');
-      placeholderResult.style.display = 'none';
-      resultMeta.textContent = `GIF · ${frameCount} khung hình · ${width}×${height} · ${formatBytes(blob.size)}`;
-      downloadBtnText.textContent = 'Tải xuống GIF';
-      if (successBadgeText) successBadgeText.textContent = 'Chuyển video sang GIF thành công!';
-      downloadSection.classList.remove('hidden');
-      progressSection.classList.add('hidden');
-      videoToGifConvertBtn.disabled = false;
+      showVideoToGifResult(blob, `${frameCount} ${t('framesCount')}`, width, height);
       if (workerUrl) URL.revokeObjectURL(workerUrl);
-      showToast(t('toastVideoToGifSuccess'), 'success');
     });
     gif.on('error', err => {
       if (job.cancelled) return;
@@ -1483,7 +1548,7 @@ async function loadFFmpeg() {
     ffmpegInstance = new FFmpeg();
     ffmpegInstance.on('log', ({ message }) => console.log('[FFmpeg]', message));
     ffmpegInstance.on('progress', ({ progress }) => {
-      if (currentTab === 'editVideo') return;
+      if (currentTab === 'editVideo' || (currentTab === 'videoToGif' && videoToGifOriginalFrames.checked)) return;
       if (progress > 0 && progress <= 1) {
         const pct = Math.round(progress * 100);
         updateProgress(pct, `Đang xử lý... ${pct}%`);
@@ -2574,27 +2639,52 @@ function showSynchronizedGifPreviews(originalUrl, processedUrl) {
 // ─── Frame Editor Module ──────────────────────────────────────────────────────
 
 function copyImageData(src) {
-  const c = document.createElement('canvas');
-  c.width = src.width;
-  c.height = src.height;
-  const ctx = c.getContext('2d');
-  ctx.putImageData(src, 0, 0);
-  return ctx.getImageData(0, 0, src.width, src.height);
+  return new ImageData(new Uint8ClampedArray(src.data), src.width, src.height);
 }
 
-function initGifFrames() {
+const frameThumbSize = 78;
+const frameThumbSource = document.createElement('canvas');
+const frameThumbSourceCtx = frameThumbSource.getContext('2d');
+const frameThumbCanvas = document.createElement('canvas');
+frameThumbCanvas.width = frameThumbSize;
+frameThumbCanvas.height = frameThumbSize;
+const frameThumbCtx = frameThumbCanvas.getContext('2d', { willReadFrequently: true });
+
+function createFrameThumbnail(imgData) {
+  if (frameThumbSource.width !== imgData.width || frameThumbSource.height !== imgData.height) {
+    frameThumbSource.width = imgData.width;
+    frameThumbSource.height = imgData.height;
+  }
+  frameThumbSourceCtx.putImageData(imgData, 0, 0);
+  frameThumbCtx.clearRect(0, 0, frameThumbSize, frameThumbSize);
+  const scale = Math.min(frameThumbSize / imgData.width, frameThumbSize / imgData.height);
+  const width = Math.max(1, Math.round(imgData.width * scale));
+  const height = Math.max(1, Math.round(imgData.height * scale));
+  frameThumbCtx.drawImage(frameThumbSource, (frameThumbSize - width) / 2, (frameThumbSize - height) / 2, width, height);
+  return frameThumbCtx.getImageData(0, 0, frameThumbSize, frameThumbSize);
+}
+
+async function initGifFrames() {
   if (!superGif || frameCount === 0) {
     showToast('Hãy tải file GIF trước!', 'error');
     return;
   }
-  if (gifFrames.length > 0 && gifFrames.length === frameCount) {
-    // Frames already extracted, render and show
-    renderFilmstrip();
+  if (gifFramesInitialized) {
+    if (frameFilmstrip.children.length !== gifFrames.length) renderFilmstrip();
     setActiveFrame(activeFrameIndex);
     return;
   }
 
+  const job = beginJob();
+  frameEditorExportBtn.disabled = true;
+  frameEditorSection.setAttribute('aria-busy', 'true');
+  frameEditorLoadingStatus.classList.remove('hidden');
+  frameEditorLoadingLabel.textContent = t('frameLoadingProgress', { current: 0, total: frameCount });
+  frameEditorLoadingBar.value = 0;
+  progressSection.classList.remove('hidden');
+  updateProgress(0, t('frameLoadingProgress', { current: 0, total: frameCount }));
   gifFrames = [];
+  frameFilmstrip.replaceChildren();
   const W = superGif.get_canvas().width;
   const H = superGif.get_canvas().height;
 
@@ -2607,38 +2697,69 @@ function initGifFrames() {
   const feather   = parseInt(featherSlider.value);
   const [r0, g0, b0] = hexToRgb(bgColorInput.value);
   
-  for (let i = 0; i < frameCount; i++) {
-    let imgData;
-    if (lastProcessedFrames && lastProcessedFrames[i]) {
-      imgData = copyImageData(lastProcessedFrames[i].imgData);
-    } else {
-      superGif.move_to(i);
-      const src = superGif.get_canvas();
-      tmpCtx.clearRect(0, 0, W, H);
-      tmpCtx.drawImage(src, 0, 0);
-      imgData = tmpCtx.getImageData(0, 0, W, H);
-      removeBackground(imgData.data, r0, g0, b0, tolerance, feather, W, H, customSeeds);
+  try {
+    // Let the tab and progress bar paint before the first expensive frame.
+    await sleep(0);
+    for (let i = 0; i < frameCount; i++) {
+      if (job.cancelled) return;
+      let imgData;
+      if (lastProcessedFrames && lastProcessedFrames[i]) {
+        imgData = lastProcessedFrames[i].imgData;
+      } else {
+        superGif.move_to(i);
+        const src = superGif.get_canvas();
+        tmpCtx.clearRect(0, 0, W, H);
+        tmpCtx.drawImage(src, 0, 0);
+        imgData = tmpCtx.getImageData(0, 0, W, H);
+        removeBackground(imgData.data, r0, g0, b0, tolerance, feather, W, H, customSeeds);
+      }
+
+      const delay = frameDelays[i] || 100;
+      gifFrames.push({
+        index: i,
+        delay,
+        initialImageData: imgData,
+        currentImageData: imgData,
+        thumbnail: createFrameThumbnail(imgData),
+        history: []
+      });
+      if ((i + 1) % 2 === 0 || i === frameCount - 1) {
+        const percent = Math.round(((i + 1) / frameCount) * 100);
+        const label = t('frameLoadingProgress', { current: i + 1, total: frameCount });
+        updateProgress(percent, label);
+        frameEditorLoadingLabel.textContent = label;
+        frameEditorLoadingBar.value = percent;
+        await sleep(0);
+      }
     }
 
-    const delay = frameDelays[i] || 100;
-    gifFrames.push({
-      index: i,
-      delay,
-      initialImageData: copyImageData(imgData),
-      currentImageData: imgData,
-      history: []
-    });
+    if (job.cancelled) return;
+    activeFrameIndex = 0;
+    currentZoom = 'fit';
+    renderFilmstrip();
+    setActiveFrame(0);
+    gifFramesInitialized = true;
+  } catch (err) {
+    if (!job.cancelled) {
+      console.error(err);
+      showToast(t('toastExportError', { err: err.message || err }), 'error');
+      gifFrames = [];
+      frameFilmstrip.replaceChildren();
+    }
+  } finally {
+    if (!job.cancelled) {
+      finishJob(job);
+      progressSection.classList.add('hidden');
+      frameEditorExportBtn.disabled = !gifFramesInitialized;
+      frameEditorSection.removeAttribute('aria-busy');
+      frameEditorLoadingStatus.classList.add('hidden');
+    }
   }
-
-  activeFrameIndex = 0;
-  currentZoom = 'fit';
-  renderFilmstrip();
-  setActiveFrame(0);
 }
 
 function renderFilmstrip() {
   if (!frameFilmstrip) return;
-  frameFilmstrip.innerHTML = '';
+  const items = document.createDocumentFragment();
   if (frameFilmstripCount) frameFilmstripCount.textContent = `${gifFrames.length} ${t('framesCount')}`;
 
   gifFrames.forEach((frame, idx) => {
@@ -2682,11 +2803,11 @@ function renderFilmstrip() {
     thumbWrap.className = 'filmstrip-thumb-wrap checkered';
 
     const canvas = document.createElement('canvas');
-    canvas.width = frame.currentImageData.width;
-    canvas.height = frame.currentImageData.height;
+    canvas.width = frameThumbSize;
+    canvas.height = frameThumbSize;
     canvas.id = `filmstripCanvas-${idx}`;
     const ctx = canvas.getContext('2d');
-    ctx.putImageData(frame.currentImageData, 0, 0);
+    ctx.putImageData(frame.thumbnail, 0, 0);
 
     thumbWrap.appendChild(canvas);
 
@@ -2699,8 +2820,9 @@ function renderFilmstrip() {
     item.appendChild(label);
 
     item.addEventListener('click', () => setActiveFrame(idx));
-    frameFilmstrip.appendChild(item);
+    items.appendChild(item);
   });
+  frameFilmstrip.replaceChildren(items);
 }
 
 function updateTimelineUndoBtn() {
@@ -2758,9 +2880,12 @@ function deleteFrame(idx) {
 
 function updateThumbnail(idx) {
   const canvas = el(`filmstripCanvas-${idx}`);
+  if (gifFrames[idx]) {
+    gifFrames[idx].thumbnail = createFrameThumbnail(gifFrames[idx].currentImageData);
+  }
   if (canvas && gifFrames[idx]) {
     const ctx = canvas.getContext('2d');
-    ctx.putImageData(gifFrames[idx].currentImageData, 0, 0);
+    ctx.putImageData(gifFrames[idx].thumbnail, 0, 0);
   }
 }
 
@@ -2896,6 +3021,9 @@ function saveFrameHistory(frame) {
   if (!frame.history) frame.history = [];
   if (frame.history.length >= 15) frame.history.shift();
   frame.history.push(copyImageData(frame.currentImageData));
+  if (frame.currentImageData === frame.initialImageData) {
+    frame.currentImageData = copyImageData(frame.currentImageData);
+  }
 }
 
 function floodFillRemove(imgData, startX, startY, tolerance, W, H) {
@@ -3242,6 +3370,7 @@ async function exportEditedGif() {
   frameEditorExportBtn.disabled = true;
   progressSection.classList.remove('hidden');
   downloadSection.classList.add('hidden');
+  editedGifOutputBytes = null;
   updateProgress(5, 'Đang chuẩn bị các frame...');
 
   try {
@@ -3339,7 +3468,8 @@ async function exportEditedGif() {
 
       updateProgress(100, 'Hoàn tất!');
       progressSection.classList.add('hidden');
-      if (successBadgeText) successBadgeText.textContent = t('successFrameExport');
+      editedGifOutputBytes = blob.size;
+      if (successBadgeText) successBadgeText.textContent = `${t('successFrameExport')} · ${formatBytes(blob.size)}`;
       downloadBtnText.textContent = t('downloadEditedGif');
       downloadSection.classList.remove('hidden');
       downloadSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -3399,8 +3529,15 @@ function cancelProcessing(silent = false) {
   }
   activeJob = null;
   progressSection.classList.add('hidden');
+  frameEditorSection.removeAttribute('aria-busy');
+  frameEditorLoadingStatus.classList.add('hidden');
+  if (currentTab === 'frameEditor' && !gifFramesInitialized) {
+    gifFrames = [];
+    frameFilmstrip.replaceChildren();
+  }
   el('cancelProcessingBtn').classList.add('hidden');
   [processBtn, img2gifConvertBtn, videoToGifConvertBtn, frameEditorExportBtn, editVideoBtn, muteVideoBtn].forEach(btn => { if (btn) btn.disabled = false; });
+  if (currentTab === 'frameEditor' && !gifFramesInitialized) frameEditorExportBtn.disabled = true;
   if (!silent) showToast(currentLang === 'vi' ? 'Đã hủy xử lý.' : 'Processing cancelled.', 'info');
 }
 
@@ -3461,6 +3598,8 @@ function resetAll() {
   resultMeta.textContent = '';
 
   gifFrames = [];
+  gifFramesInitialized = false;
+  editedGifOutputBytes = null;
   deletedFramesStack = [];
   updateTimelineUndoBtn();
   activeFrameIndex = 0;

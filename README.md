@@ -41,14 +41,14 @@
 - **Thêm chữ vào GIF**: Nhập chữ, chọn cỡ, màu và vị trí trên mọi frame; xem trước trước khi xuất.
 
 ### 3. 📹 Video sang GIF (Video to GIF Converter)
-- Lấy khung hình từ video bằng trình phát video và Canvas, sau đó mã hóa GIF bằng **gif.js**. Các định dạng video dùng được phụ thuộc vào khả năng giải mã của trình duyệt.
+- Chế độ 10/20/30 FPS lấy mẫu video bằng trình phát và Canvas, rồi mã hóa bằng **gif.js**. Chế độ **Khung hình gốc** dùng FFmpeg WebAssembly để giữ các frame nguồn cùng thời điểm hiển thị, sau đó xuất GIF ngay trên máy.
 - **Cắt xén thời lượng linh hoạt**:
   - Cắt nhanh: Toàn bộ, 3 giây đầu, 5 giây đầu.
   - Tùy chỉnh chính xác: Nhập số giây bắt đầu (`Start Time`) và số giây kết thúc (`End Time`).
 - **Tùy chọn độ phân giải & FPS**:
   - Kích thước: Giữ nguyên, phóng lên 2×/4×, hoặc thu nhỏ còn 50%/30%; có tùy chọn tăng độ nét.
-  - Tốc độ khung hình: 1–20 FPS.
-- **Dự toán dung lượng**: Hiển thị ước tính dung lượng GIF trước khi tạo.
+  - Tốc độ khung hình: 10, 20 (mặc định) hoặc 30 FPS; có thêm chế độ **Khung hình gốc** để giữ từng frame và thời điểm hiển thị từ video nguồn khi xuất GIF.
+- **Dự toán dung lượng**: Hiển thị ước tính khi chọn 10/20/30 FPS. Với khung hình gốc, số frame và dung lượng phụ thuộc vào video nguồn.
 
 ### Tùy chọn chung khi xuất
 - Có thể hủy tác vụ đang xử lý bằng nút **Hủy xử lý**.
