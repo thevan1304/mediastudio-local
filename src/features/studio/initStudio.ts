@@ -2,7 +2,7 @@ import { makeZip } from '../../utils/zip';
 import { chooseGifTransparencyKey, applyGifTransparencyKey } from '../gif/transparency';
 import { I18N, LANGS } from '../../locales/messages';
 import { removeBackground } from '../background/removeBackground';
-import { trimVideo, joinVideos } from '../video/editVideo';
+import { trimVideo, joinVideos, type VideoExportOptions } from '../video/editVideo';
 
 export function initStudio(): void {
 const el = (id: string): any => document.getElementById(id);
@@ -1095,7 +1095,7 @@ img2gifConvertBtn.addEventListener('click', async () => {
   
   let workerBlobUrl = null;
   try {
-    const resp = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+    const resp = await fetch('/vendor/gif.worker.js');
     const wBlob = await resp.blob();
     workerBlobUrl = URL.createObjectURL(wBlob);
   } catch (e) {
@@ -1168,7 +1168,7 @@ img2gifConvertBtn.addEventListener('click', async () => {
 // ─── Video to GIF Feature ────────────────────────────────────────────────────
 async function getGifWorkerUrl() {
   try {
-    const response = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+    const response = await fetch('/vendor/gif.worker.js');
     if (!response.ok) throw new Error('Không tải được GIF worker');
     return URL.createObjectURL(await response.blob());
   } catch (error) {
@@ -1190,6 +1190,9 @@ function setVideoToGifFile(file) {
   currentFile = file;
   editVideoClips = [file];
   editClipRanges.clear();
+  editUndoStack.length = 0;
+  editRedoStack.length = 0;
+  updateEditHistoryButtons();
   editStartTime.value = '0';
   if (editedVideoBlobUrl) URL.revokeObjectURL(editedVideoBlobUrl);
   editedVideoBlobUrl = null;
@@ -1516,6 +1519,54 @@ const editJoinContent = el('editJoinContent');
 const timelineMedia = new Map<File, { duration: number; frames: string[] }>();
 const timelineMediaFailed = new Set<File>();
 const editClipRanges = new Map<File, { start: number; end: number }>();
+type EditSnapshot = { clips: File[]; ranges: Map<File, { start: number; end: number }>; start: string; end: string };
+const editUndoStack: EditSnapshot[] = [];
+const editRedoStack: EditSnapshot[] = [];
+function editSnapshot(): EditSnapshot {
+  return { clips: [...editVideoClips], ranges: new Map([...editClipRanges].map(([file, range]) => [file, { ...range }])), start: editStartTime.value, end: editEndTime.value };
+}
+function updateEditHistoryButtons(): void {
+  (el('editUndoBtn') as HTMLButtonElement).disabled = !editUndoStack.length || !!activeJob;
+  (el('editRedoBtn') as HTMLButtonElement).disabled = !editRedoStack.length || !!activeJob;
+}
+function rememberEdit(): void {
+  editUndoStack.push(editSnapshot());
+  if (editUndoStack.length > 30) editUndoStack.shift();
+  editRedoStack.length = 0;
+  updateEditHistoryButtons();
+}
+function restoreEdit(snapshot: EditSnapshot): void {
+  editVideoClips = [...snapshot.clips];
+  editClipRanges.clear();
+  snapshot.ranges.forEach((range, file) => editClipRanges.set(file, { ...range }));
+  editStartTime.value = snapshot.start;
+  editEndTime.value = snapshot.end;
+  resetJoinPreview();
+  invalidateEditedVideoResult();
+  renderEditVideoClips();
+  updateTimelineSelection();
+  updateEditTrimSummary();
+  updateEditHistoryButtons();
+}
+function stepEditHistory(direction: 'undo' | 'redo'): void {
+  if (activeJob) return;
+  const source = direction === 'undo' ? editUndoStack : editRedoStack;
+  const target = direction === 'undo' ? editRedoStack : editUndoStack;
+  const snapshot = source.pop();
+  if (!snapshot) return;
+  target.push(editSnapshot());
+  restoreEdit(snapshot);
+}
+el('editUndoBtn').addEventListener('click', () => stepEditHistory('undo'));
+el('editRedoBtn').addEventListener('click', () => stepEditHistory('redo'));
+for (const id of ['editResolution', 'editQuality']) el(id).addEventListener('change', invalidateEditedVideoResult);
+document.addEventListener('keydown', (event: KeyboardEvent) => {
+  if (currentTab !== 'editVideo' || !(event.ctrlKey || event.metaKey) || activeJob) return;
+  if ((event.target as Element)?.closest('input, textarea, [contenteditable]')) return;
+  if (event.key.toLowerCase() !== 'z' && event.key.toLowerCase() !== 'y') return;
+  event.preventDefault();
+  stepEditHistory(event.key.toLowerCase() === 'y' || event.shiftKey ? 'redo' : 'undo');
+});
 let editTimelineZoom = 1;
 let editJoinZoom = 1;
 let timelineLoadToken = 0;
@@ -1945,6 +1996,7 @@ function renderEditVideoClips() {
       event.preventDefault();
       const target = index + (event.key === 'ArrowRight' ? 1 : -1);
       if (target < 0 || target >= editVideoClips.length) return;
+      rememberEdit();
       [editVideoClips[index], editVideoClips[target]] = [editVideoClips[target], editVideoClips[index]];
       resetJoinPreview();
       invalidateEditedVideoResult();
@@ -1979,6 +2031,7 @@ function renderEditVideoClips() {
       handle.textContent = edge === 'start' ? '‹' : '›';
       handle.addEventListener('pointerdown', (event: PointerEvent) => {
         event.preventDefault();
+        rememberEdit();
         const original = { ...getEditClipRange(file)! };
         const width = strip.getBoundingClientRect().width;
         const pointerX = event.clientX;
@@ -1996,6 +2049,7 @@ function renderEditVideoClips() {
         event.preventDefault();
         const current = getEditClipRange(file)!;
         const step = event.shiftKey ? 1 : 0.1;
+        rememberEdit();
         setEditClipEdge(row, file, edge, (edge === 'start' ? current.start : current.end) + (event.key === 'ArrowRight' ? step : -step));
       });
       strip.appendChild(handle);
@@ -2100,6 +2154,7 @@ for (const edge of ['start', 'end'] as const) {
   const handle = el(edge === 'start' ? 'editTimelineStart' : 'editTimelineEnd');
   handle.addEventListener('pointerdown', (event: PointerEvent) => {
     event.preventDefault();
+    rememberEdit();
     handle.setPointerCapture(event.pointerId);
     setTimelineTrimEdge(edge, timelineTimeAt(event.clientX));
   });
@@ -2111,6 +2166,7 @@ for (const edge of ['start', 'end'] as const) {
     event.preventDefault();
     const step = event.shiftKey ? 1 : 0.1;
     const current = Number((edge === 'start' ? editStartTime : editEndTime).value);
+    rememberEdit();
     setTimelineTrimEdge(edge, current + (event.key === 'ArrowRight' ? step : -step));
   });
 }
@@ -2154,6 +2210,7 @@ editJoinInput.addEventListener('change', () => {
   if ([...editVideoClips, ...added].reduce((sum, file) => sum + file.size, 0) > 250 * 1024 * 1024) {
     showToast(t('editTooLarge'), 'error'); return;
   }
+  rememberEdit();
   editVideoClips.push(...added);
   invalidateEditedVideoResult();
   renderEditVideoClips();
@@ -2166,6 +2223,7 @@ editClipList.addEventListener('click', (event: MouseEvent) => {
   const index = Number(button.dataset.index);
   if (!Number.isInteger(index) || index < 0 || index >= editVideoClips.length) return;
   if (button.dataset.action === 'remove' && editVideoClips.length > 1) {
+    rememberEdit();
     if (joinPreviewFile === editVideoClips[index]) resetJoinPreview();
     editClipRanges.delete(editVideoClips[index]);
     editVideoClips.splice(index, 1);
@@ -2195,6 +2253,7 @@ editClipList.addEventListener('drop', (event: DragEvent) => {
   const source = draggingClipIndex;
   draggingClipIndex = -1;
   if (!Number.isInteger(target) || source < 0 || source >= editVideoClips.length) return;
+  if (target !== source && target !== source + 1) rememberEdit();
   const [moved] = editVideoClips.splice(source, 1);
   editVideoClips.splice(Math.max(0, Math.min(editVideoClips.length, target > source ? target - 1 : target)), 0, moved);
   resetJoinPreview();
@@ -2229,9 +2288,13 @@ editVideoBtn.addEventListener('click', async () => {
     if (job.cancelled) return;
     const report = (key: string, percent: number, params?: Record<string, number>) => updateProgress(percent, t(key, params));
     const cancelled = () => job.cancelled;
+    const exportOptions: VideoExportOptions = {
+      maxHeight: (el('editResolution') as HTMLSelectElement).value === 'source' ? null : Number((el('editResolution') as HTMLSelectElement).value),
+      crf: Number((el('editQuality') as HTMLSelectElement).value) as VideoExportOptions['crf'],
+    };
     const blob = mode === 'trim'
-      ? await trimVideo(ffmpeg, videoToGifFile, start, end, report, cancelled)
-      : await joinVideos(ffmpeg, editVideoClips.map(file => ({ file, ...getEditClipRange(file)! })), videoPlayer.videoWidth, videoPlayer.videoHeight, report, cancelled);
+      ? await trimVideo(ffmpeg, videoToGifFile, start, end, videoPlayer.videoWidth, videoPlayer.videoHeight, exportOptions, report, cancelled)
+      : await joinVideos(ffmpeg, editVideoClips.map(file => ({ file, ...getEditClipRange(file)! })), videoPlayer.videoWidth, videoPlayer.videoHeight, exportOptions, report, cancelled);
     if (job.cancelled) return;
     if (editedVideoBlobUrl) URL.revokeObjectURL(editedVideoBlobUrl);
     editedVideoBlobUrl = URL.createObjectURL(blob);
@@ -2367,7 +2430,7 @@ async function processGif() {
   let workerBlobUrl = null;
   try {
     updateProgress(2, 'Đang tải worker...');
-    const resp = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+    const resp = await fetch('/vendor/gif.worker.js');
     const blob = await resp.blob();
     workerBlobUrl = URL.createObjectURL(blob);
   } catch (e) {
@@ -2795,9 +2858,39 @@ function drawActiveFrame() {
   frameEditorCanvas.height = H;
   const ctx = frameEditorCanvas.getContext('2d');
   ctx.putImageData(frame.currentImageData, 0, 0);
+  drawGifText(ctx, W, H, 1);
 
   applyCanvasZoom();
 }
+
+function drawGifText(ctx: CanvasRenderingContext2D, width: number, height: number, scale: number) {
+  const value = (el('gifTextInput') as HTMLInputElement)?.value.trim();
+  if (!value) return;
+  const size = Math.max(8, Math.min(200, Number((el('gifTextSize') as HTMLInputElement).value) || 36)) * scale;
+  const position = (el('gifTextPosition') as HTMLSelectElement).value;
+  const color = (el('gifTextColor') as HTMLInputElement).value;
+  ctx.save();
+  let fontSize = Math.min(size, height * 0.45);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  do {
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+    if (ctx.measureText(value).width <= width * 0.9) break;
+    fontSize -= 1;
+  } while (fontSize > 8);
+  const y = position === 'top' ? fontSize * 0.8 : position === 'center' ? height / 2 : height - fontSize * 0.8;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(2, fontSize / 9);
+  ctx.strokeStyle = 'rgba(0,0,0,.85)';
+  ctx.fillStyle = color;
+  ctx.strokeText(value, width / 2, y, width * 0.9);
+  ctx.fillText(value, width / 2, y, width * 0.9);
+  ctx.restore();
+}
+
+['gifTextInput', 'gifTextSize', 'gifTextColor', 'gifTextPosition'].forEach(id => {
+  el(id)?.addEventListener('input', drawActiveFrame);
+});
 
 function saveFrameHistory(frame) {
   if (!frame.history) frame.history = [];
@@ -3189,6 +3282,7 @@ async function exportEditedGif() {
 
       scaledCtx.clearRect(0, 0, outW, outH);
       scaledCtx.drawImage(tmpCanvas, crop.x, crop.y, crop.w, crop.h, 0, 0, outW, outH);
+      drawGifText(scaledCtx, outW, outH, outW / crop.w);
 
       const delay = Math.max(20, Math.round(frame.delay / speed));
       exportFrames.push({
@@ -3339,6 +3433,9 @@ function resetAll() {
   editVideoClips = [];
   resetJoinPreview();
   editClipRanges.clear();
+  editUndoStack.length = 0;
+  editRedoStack.length = 0;
+  updateEditHistoryButtons();
   timelineLoadToken++;
   timelineMedia.clear();
   timelineMediaFailed.clear();

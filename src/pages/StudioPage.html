@@ -13,16 +13,16 @@
       </div>
       <div class="lang-picker-wrap" id="langPickerWrap">
         <button type="button" class="lang-picker-trigger" id="langPickerTrigger" aria-haspopup="listbox" aria-expanded="false">
-          <img class="lang-flag" id="langPickerFlag" src="https://flagcdn.com/w20/gb.png" srcset="https://flagcdn.com/w40/gb.png 2x" alt="English" width="20" height="14">
+          <img class="lang-flag" id="langPickerFlag" src="/flags/gb.svg" alt="English" width="20" height="14">
           <span class="lang-name" id="langPickerName">English</span>
           <svg class="lang-caret" viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.937a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.061z" clip-rule="evenodd"/></svg>
         </button>
         <div class="lang-dropdown" id="langDropdown" role="listbox" aria-label="Select language">
           <button type="button" class="lang-option active" data-lang="en" role="option">
-            <img src="https://flagcdn.com/w20/gb.png" srcset="https://flagcdn.com/w40/gb.png 2x" alt="" width="20" height="14"><span>English</span>
+            <img src="/flags/gb.svg" alt="" width="20" height="14"><span>English</span>
           </button>
           <button type="button" class="lang-option" data-lang="vi" role="option">
-            <img src="https://flagcdn.com/w20/vn.png" srcset="https://flagcdn.com/w40/vn.png 2x" alt="" width="20" height="14"><span>Tiếng Việt</span>
+            <img src="/flags/vn.svg" alt="" width="20" height="14"><span>Tiếng Việt</span>
           </button>
         </div>
       </div>
@@ -431,6 +431,11 @@
             <div class="video-edit-mode-tabs" role="group" aria-label="Video editing mode">
               <button type="button" class="video-edit-mode active" id="editTrimMode" data-i18n="editTrimMode">Trim video</button>
               <button type="button" class="video-edit-mode" id="editJoinMode" data-i18n="editJoinMode">Join clips</button>
+              <span class="video-edit-history-actions"><button type="button" class="btn-secondary" id="editUndoBtn" disabled data-i18n="editUndo">Undo</button><button type="button" class="btn-secondary" id="editRedoBtn" disabled data-i18n="editRedo">Redo</button></span>
+            </div>
+            <div class="video-export-options">
+              <label><span data-i18n="editResolution">Resolution</span><select id="editResolution" class="text-input"><option value="source" data-i18n="editResolutionSource">Source size</option><option value="720">Up to 720p</option><option value="480">Up to 480p</option></select></label>
+              <label><span data-i18n="editQuality">Quality</span><select id="editQuality" class="text-input"><option value="18" data-i18n="editQualityHigh">High</option><option value="23" selected data-i18n="editQualityStandard">Standard</option><option value="28" data-i18n="editQualitySmall">Smaller file</option></select></label>
             </div>
 
             <div id="editTrimPanel" class="video-edit-panel">
@@ -630,6 +635,17 @@
             <p style="font-size: 12px; color: #8892b0; margin: 8px 0 0; text-align: center;">
               <span data-i18n-html="frameEditorTip">💡 <strong>Tip:</strong> Click on color area to erase. Hold <strong>Space</strong> and drag to pan when zoomed in.</span>
             </p>
+          </div>
+
+          <div class="gif-text-panel">
+            <label class="control-label" for="gifTextInput" data-i18n="gifTextLabel">Text on GIF</label>
+            <div class="gif-text-controls">
+              <input id="gifTextInput" class="text-input" type="text" maxlength="120" placeholder="Enter text" data-i18n-placeholder="gifTextPlaceholder">
+              <label><span data-i18n="gifTextSize">Size</span><input id="gifTextSize" class="text-input" type="number" min="8" max="200" value="36"></label>
+              <label><span data-i18n="gifTextColor">Color</span><input id="gifTextColor" type="color" value="#ffffff"></label>
+              <label><span data-i18n="gifTextPosition">Position</span><select id="gifTextPosition" class="text-input"><option value="top" data-i18n="gifTextTop">Top</option><option value="center" data-i18n="gifTextCenter">Center</option><option value="bottom" selected data-i18n="gifTextBottom">Bottom</option></select></label>
+            </div>
+            <p class="hint-text" data-i18n="gifTextHint">Text appears on every frame of the exported GIF.</p>
           </div>
 
           <!-- Bottom Timeline Filmstrip -->

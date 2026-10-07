@@ -1,6 +1,15 @@
 type Progress = (key: string, percent: number, params?: Record<string, number>) => void;
 type Cancelled = () => boolean;
 export type JoinClip = { file: File; start: number; end: number };
+export type VideoExportOptions = { maxHeight: number | null; crf: 18 | 23 | 28 };
+
+function outputDimensions(sourceWidth: number, sourceHeight: number, maxHeight: number | null) {
+  const ratio = maxHeight ? Math.min(1, maxHeight / sourceHeight) : 1;
+  return {
+    width: Math.max(2, Math.floor(sourceWidth * ratio / 2) * 2),
+    height: Math.max(2, Math.floor(sourceHeight * ratio / 2) * 2),
+  };
+}
 
 function extension(file: File) {
   const ext = file.name.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase();
@@ -17,8 +26,10 @@ async function deleteFiles(ffmpeg: any, names: string[]) {
 
 export async function trimVideo(
   ffmpeg: any, file: File, start: number, end: number,
+  sourceWidth: number, sourceHeight: number, options: VideoExportOptions,
   onProgress: Progress, isCancelled: Cancelled,
 ): Promise<Blob> {
+  const { width, height } = outputDimensions(sourceWidth, sourceHeight, options.maxHeight);
   const input = `edit_input.${extension(file)}`;
   const output = 'edit_trimmed.mp4';
   try {
@@ -29,8 +40,8 @@ export async function trimVideo(
     const code = await ffmpeg.exec([
       '-i', input, '-ss', String(start), '-t', String(end - start),
       '-map', '0:v:0', '-map', '0:a:0?',
-      '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
-      '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-pix_fmt', 'yuv420p',
+      '-vf', `scale=${width}:${height},setsar=1`,
+      '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', String(options.crf), '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', output,
     ]);
     assertSuccess(code, 'Trim');
@@ -45,11 +56,10 @@ export async function trimVideo(
 
 export async function joinVideos(
   ffmpeg: any, clips: JoinClip[], sourceWidth: number, sourceHeight: number,
+  options: VideoExportOptions,
   onProgress: Progress, isCancelled: Cancelled,
 ): Promise<Blob> {
-  const ratio = Math.min(1, 1280 / sourceWidth, 720 / sourceHeight);
-  const width = Math.max(2, Math.floor(sourceWidth * ratio / 2) * 2);
-  const height = Math.max(2, Math.floor(sourceHeight * ratio / 2) * 2);
+  const { width, height } = outputDimensions(sourceWidth, sourceHeight, options.maxHeight);
   const segments: string[] = [];
   const cleanup: string[] = [];
   const output = 'edit_joined.mp4';
@@ -75,7 +85,7 @@ export async function joinVideos(
         '-map', '0:v:0', '-map', useSilence ? '1:a:0' : '0:a:0',
         '-vf', `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,fps=30,setsar=1`,
         '-af', 'apad', '-shortest',
-        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '24', '-pix_fmt', 'yuv420p',
+        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', String(options.crf), '-pix_fmt', 'yuv420p',
         '-c:a', 'aac', '-ar', '44100', '-ac', '2', '-b:a', '128k',
         '-movflags', '+faststart', segment,
       ];

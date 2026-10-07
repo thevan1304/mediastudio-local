@@ -1166,6 +1166,20 @@ body.eyedrop-mode #originalImg {
 }
 
 .frame-delay-control { display: inline-flex; align-items: center; gap: 7px; color: var(--text-secondary); font-size: 12px; }
+.gif-text-panel { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-surface); }
+.gif-text-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-top: 10px; }
+.gif-text-controls > input { flex: 2 1 240px; min-width: 0; }
+.gif-text-controls label { display: grid; gap: 5px; color: var(--text-secondary); font-size: 12px; }
+.gif-text-controls input[type="number"] { width: 82px; }
+.gif-text-controls input[type="color"] { width: 48px; height: 38px; border: 1px solid var(--border); border-radius: 8px; background: transparent; cursor: pointer; }
+.gif-text-controls select { min-width: 100px; }
+.gif-text-panel .hint-text { margin: 9px 0 0; }
+.video-edit-history-actions { display: inline-flex; gap: 8px; margin-left: auto; }
+.video-edit-history-actions button { padding: 7px 13px; }
+.video-edit-history-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.video-export-options { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.video-export-options label { display: grid; gap: 5px; color: var(--text-secondary); font-size: 12px; }
+.video-export-options select { min-width: 145px; }
 .frame-delay-control input { width: 78px; padding: 6px; color: var(--text-primary); background: var(--bg-surface); border: 1px solid var(--border); border-radius: 7px; }
 .filmstrip-item[draggable="true"] { cursor: grab; }
 .filmstrip-item.dragging { opacity: .45; }

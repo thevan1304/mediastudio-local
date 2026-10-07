@@ -1,7 +1,7 @@
 # 🎬 GIF Background Remover & Video Studio
 
 > **Bộ công cụ xử lý ảnh, GIF và video ngay trong trình duyệt.**
-> Tệp được xử lý trên máy của bạn; cần kết nối mạng để tải một số thư viện từ CDN.
+> Tệp được xử lý trên máy của bạn. Sau khi cài dependency, ứng dụng chạy trên localhost không cần kết nối mạng.
 
 ---
 
@@ -38,6 +38,7 @@
   - **Điều hướng linh hoạt**: Giữ `Ctrl` + Cuộn chuột để Zoom; Giữ `Space` (phím cách) hoặc ấn chuột giữa để kéo màn hình (Pan).
 - **Hoàn tác & Khôi phục**: Hỗ trợ `Ctrl + Z` (Undo) từng bước và khôi phục frame ban đầu.
 - **Sắp xếp và thời gian**: Kéo thả đổi thứ tự frame, chỉnh thời gian hiển thị từng frame trước khi xuất.
+- **Thêm chữ vào GIF**: Nhập chữ, chọn cỡ, màu và vị trí trên mọi frame; xem trước trước khi xuất.
 
 ### 3. 📹 Video sang GIF (Video to GIF Converter)
 - Lấy khung hình từ video bằng trình phát video và Canvas, sau đó mã hóa GIF bằng **gif.js**. Các định dạng video dùng được phụ thuộc vào khả năng giải mã của trình duyệt.
@@ -55,6 +56,8 @@
 ### 4. ✂️ Sửa Video (Edit Video)
 - Cắt video trên thanh thời gian có ảnh khung hình: kéo hai tay nắm để chọn đoạn, kéo đầu phát trắng để tua, phát/tạm dừng và phóng to/thu nhỏ timeline. Có thể dùng phím mũi tên khi chọn tay nắm hoặc đầu phát để chỉnh chính xác.
 - Ghép tối đa 8 clip (tổng không quá 250 MB) trên dải thời gian có thước, nút phát và đầu phát kéo để xem trước. Kéo trực tiếp clip đến trước, sau hoặc giữa các clip khác; kéo hai mép tím của từng clip để chọn phần cần giữ trước khi xuất MP4. Các clip được chuẩn hóa về cùng kích thước, 30 FPS, H.264/AAC; clip không có tiếng được thêm âm thanh im lặng để ghép ổn định.
+- Hoàn tác/làm lại các thao tác cắt, thêm/xóa và sắp xếp clip trong phần sửa video.
+- Chọn kích thước gốc hoặc giới hạn 720p/480p cùng mức chất lượng trước khi xuất MP4.
 - Xem trước và tải video kết quả. Việc mã hóa diễn ra trên máy nên thời gian xử lý phụ thuộc vào độ dài clip và thiết bị.
 
 ### 5. 🔇 Xóa âm thanh Video (Mute Video)
@@ -76,7 +79,7 @@
   - **[gif.js](https://github.com/jnordberg/gif.js)**: Bộ mã hóa GIF hiệu năng cao sử dụng Web Workers đa luồng.
   - **[libgif-js (SuperGif)](https://github.com/buzzfeed/libgif-js)**: Giải mã và đọc từng frame cùng bảng màu của file GIF.
 - **Máy chủ**: Vite phục vụ ứng dụng khi phát triển; `server.js` phục vụ bản build trong `dist/`. Cả hai thiết lập header cho WebAssembly/SharedArrayBuffer; không có API tải tệp lên.
-- **Tài nguyên CDN**: Trang tải `libgif`, `gif.js`, GIF worker, Google Fonts và ảnh cờ từ dịch vụ bên ngoài. Vì vậy ứng dụng hiện chưa hoạt động đầy đủ khi ngắt mạng.
+- **Tài nguyên cục bộ**: `libgif`, `gif.js`, GIF worker và ảnh cờ được phục vụ từ project. Giao diện dùng font hệ thống để hoạt động khi ngắt mạng.
 
 ---
 
@@ -96,12 +99,14 @@ src/
   main.tsx               Điểm khởi chạy React
 public/
   ffmpeg/                FFmpeg WebAssembly và worker
+  vendor/                Thư viện GIF và giấy phép
+  flags/                 Ảnh cờ giao diện
 index.html               Trang gốc của Vite
 vite.config.mts          Cấu hình máy chủ phát triển
 server.js                Máy chủ phục vụ bản build
 ```
 
-Giao diện công cụ hiện được gắn trong trang React, còn các thao tác chỉnh sửa media được tổ chức trong các module TypeScript. Các thư viện GIF vẫn tải từ CDN.
+Giao diện công cụ hiện được gắn trong trang React, còn các thao tác chỉnh sửa media được tổ chức trong các module TypeScript. Các thư viện GIF được phục vụ từ thư mục `public/vendor/`.
 
 ---
 
@@ -123,6 +128,7 @@ Giao diện công cụ hiện được gắn trong trang React, còn các thao t
    ```bash
    npm install
    ```
+   Bước cài đặt đầu tiên cần mạng nếu máy chưa có sẵn các gói npm. Sau đó ứng dụng không cần mạng khi chạy và xử lý tệp.
 
 3. **Chạy khi phát triển**:
    ```bash
@@ -160,4 +166,4 @@ Giao diện công cụ hiện được gắn trong trang React, còn các thao t
 ## 🔒 Cam kết bảo mật & Quyền riêng tư
 
 - Ảnh, GIF và video được chọn được xử lý trong trình duyệt; mã nguồn hiện tại không có chức năng tải các tệp đó lên máy chủ.
-- Khi mở ứng dụng hoặc tạo GIF, trình duyệt tải một số thư viện và tài nguyên giao diện từ CDN. Dung lượng tệp xử lý được phụ thuộc vào bộ nhớ và khả năng của trình duyệt.
+- Khi mở ứng dụng hoặc tạo GIF, trình duyệt tải thư viện và tài nguyên giao diện từ máy chủ localhost. Dung lượng tệp xử lý phụ thuộc vào bộ nhớ và khả năng của trình duyệt.
